@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  name        String
+  email       String   @unique
+  phonenumber String?
+  password    String
+  role        Role     @default(EMPLOYEE)
+  department  String
+  createdAt   DateTime @default(now())
+  createdTrainings Training[]           @relation("CreatedTrainings")
+  enrollments      TrainingEnrollment[]
+}
+
+model Training {
+  id          String               @id @default(uuid())
+  title       String
+  description String
+  mode        TrainingMode
+  location    String? // for OFFLINE
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  createdBy   User                 @relation("CreatedTrainings", fields: [createdById], references: [id])
+  createdById String
+  enrollments TrainingEnrollment[]
+}
+
+model TrainingEnrollment {
+  id          String         @id @default(uuid())
+  employee    User           @relation(fields: [employeeId], references: [id])
+  training    Training       @relation(fields: [trainingId], references: [id])
+  employeeId  String
+  trainingId  String
+  status      TrainingStatus @default(PENDING)
+  certificate String?
+  rating      Float?
+  enrolledAt  DateTime       @default(now())
+
+  @@unique([employeeId, trainingId])
+}
+
+enum Role {
+  EMPLOYEE
+  HR_ADMIN
+  ADMIN
+}
+
+enum TrainingStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum TrainingMode {
+  ONLINE
+  OFFLINE
+}
