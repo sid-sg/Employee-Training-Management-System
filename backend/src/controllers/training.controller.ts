@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { sendEmail } from '../mailer/mailer';
+import { trainingEnrollmentTemplate } from '../mailer/templates';
 
 const prisma = new PrismaClient();
 
@@ -184,6 +186,19 @@ export const enrollUsersInTraining = async (req: AuthRequest, res: Response): Pr
     }
 
     try {
+        const training = await prisma.training.findUnique({
+            where: { id: trainingId },
+        });
+
+        if (!training) {
+            res.status(404).json({ error: 'Training not found' });
+            return;
+        }
+
+        const users = await prisma.user.findMany({
+            where: { id: { in: userIds } },
+        });
+
         const enrollments = await Promise.all(
             userIds.map(userId =>
                 prisma.trainingEnrollment.upsert({
@@ -199,9 +214,56 @@ export const enrollUsersInTraining = async (req: AuthRequest, res: Response): Pr
             )
         );
 
+        await Promise.allSettled(
+            users.map(user =>
+                sendEmail(
+                    user.email,
+                    `${training.title} Enrollment`,
+                    trainingEnrollmentTemplate(
+                        user.name,
+                        training.title,
+                        training.mode,
+                        training.startDate,
+                        training.endDate,
+                        training.location || ''
+                    )
+                )
+            )
+        );
+
+
         res.status(201).json({ message: 'Users enrolled successfully', enrollments });
     } catch (error) {
         console.error('Error enrolling users:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+
+};
+
+export const disenrollUsersFromTraining = async (req: AuthRequest, res: Response): Promise<void> => {
+    const { trainingId } = req.params;
+    const { userIds } = req.body;
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+        res.status(400).json({ error: 'userIds must be a non-empty array' });
+        return;
+    }
+
+    try {
+        const deletions = await Promise.all(
+            userIds.map(userId =>
+                prisma.trainingEnrollment.deleteMany({
+                    where: {
+                        employeeId: userId,
+                        trainingId,
+                    },
+                })
+            )
+        );
+
+        res.status(200).json({ message: 'Users disenrolled successfully', deletions });
+    } catch (error) {
+        console.error('Error disenrolling users:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };

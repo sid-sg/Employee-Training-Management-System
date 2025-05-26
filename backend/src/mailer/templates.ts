@@ -17,3 +17,19 @@ export const onboardingTemplate = (email: string, password: string) => `
       <p>Best regards,<br>The Training Portal Team</p>
     </div>
 `;
+
+export const trainingEnrollmentTemplate = (name: string, title: string, mode: string, startDate: Date, endDate: Date, location: string) => `
+    <div style="font-family: Arial, sans-serif; color: #333;">
+      <h2 style="color: #2e6c80;">You're enrolled in a new training!</h2>
+      <p>Hi ${name},</p>
+      <p>Here are your training details:</p>
+      <ul>
+        <li><strong>Title:</strong> ${title}</li>
+        <li><strong>Mode:</strong> ${mode}</li>
+        <li><strong>Start Date:</strong> ${startDate}</li>
+        <li><strong>End Date:</strong> ${endDate}</li>
+        ${mode === 'OFFLINE' && location ? `<li><strong>Location:</strong> ${location}</li>` : ''}
+      </ul>
+      <p>Please join the training on time. Reach out to HR for any queries.</p>
+    </div>
+`;

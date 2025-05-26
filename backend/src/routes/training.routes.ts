@@ -32,10 +32,10 @@ router.get(
 );
 
 router.get(
-  '/enrolled',
-  verifyToken,
-  restrictToRoles('EMPLOYEE'), 
-  getEnrolledTrainings
+    '/enrolled',
+    verifyToken,
+    restrictToRoles('EMPLOYEE'),
+    getEnrolledTrainings
 );
 
 
@@ -47,11 +47,17 @@ router.get(
 );
 
 router.post(
-  '/:trainingId/enroll',
-  verifyToken,
-  restrictToRoles('HR_ADMIN'),
-  enrollUsersInTraining
+    '/:trainingId/enroll',
+    verifyToken,
+    restrictToRoles('HR_ADMIN'),
+    enrollUsersInTraining
 );
 
+router.post(
+    '/:trainingId/deenroll',
+    verifyToken,
+    restrictToRoles('HR_ADMIN'),
+    enrollUsersInTraining
+);
 
 export default router;
