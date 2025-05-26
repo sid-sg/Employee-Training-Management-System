@@ -15,14 +15,14 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  name        String
-  email       String   @unique
-  phonenumber String?
-  password    String
-  role        Role     @default(EMPLOYEE)
-  department  String
-  createdAt   DateTime @default(now())
+  id               String               @id @default(uuid())
+  name             String
+  email            String               @unique
+  phonenumber      String?
+  password         String
+  role             Role                 @default(EMPLOYEE)
+  department       String
+  createdAt        DateTime             @default(now())
   createdTrainings Training[]           @relation("CreatedTrainings")
   enrollments      TrainingEnrollment[]
 }
@@ -33,6 +33,8 @@ model Training {
   description String
   mode        TrainingMode
   location    String? // for OFFLINE
+  latitude    Float? // for google maps 
+  longitude   Float? // for google maps 
   startDate   DateTime
   endDate     DateTime
   createdAt   DateTime             @default(now())

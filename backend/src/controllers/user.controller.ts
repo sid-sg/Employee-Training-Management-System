@@ -1,9 +1,17 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma/client';
 import bcrypt from 'bcrypt';
+// import { Prisma } from '@prisma/client';
 
 interface AuthRequest extends Request {
     user?: { id: string };
+}
+
+
+enum Role {
+  EMPLOYEE,
+  HR_ADMIN,
+  ADMIN,
 }
 
 export const updatePhoneNumber = async (req: AuthRequest, res: Response) => {
@@ -60,3 +68,41 @@ export const updatePassword = async (req: AuthRequest, res: Response) => {
         return;
     }
 };
+
+export const getUsers = async (req: AuthRequest, res: Response) => {
+  const { role, department } = req.query;
+
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        ...(role && { role: role as any }), // ideally use proper enum type here
+        ...(department && { department: department as string }),
+      },
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Error fetching users' });
+  }
+};
+
+
+export const getEmployees = async (req: AuthRequest, res: Response) => {
+  const { department } = req.query;
+
+  try {
+    const employees = await prisma.user.findMany({
+      where: {
+        role: 'EMPLOYEE',
+        ...(department && { department: department as string }),
+      },
+    });
+
+    res.json(employees);
+  } catch (error) {
+    console.error('Error fetching employees:', error);
+    res.status(500).json({ error: 'Error fetching employees' });
+  }
+};
+
