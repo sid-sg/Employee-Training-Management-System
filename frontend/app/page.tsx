@@ -1,22 +1,20 @@
 "use client"
 
 import type React from "react"
-
+import axios from "axios"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { GraduationCap, Users, Shield } from "lucide-react"
+import { GraduationCap } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [userType, setUserType] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -26,26 +24,37 @@ export default function LoginPage() {
     setLoading(true)
     setError("")
 
-    // Simulate login logic
     try {
-      // Mock authentication - replace with actual API call
-      if (userType === "super-admin" && email === "admin@company.com" && password === "admin123") {
-        localStorage.setItem("userType", "super-admin")
-        localStorage.setItem("userEmail", email)
-        router.push("/super-admin/dashboard")
-      } else if (userType === "hr-admin" && email.includes("hr") && password === "hr123") {
-        localStorage.setItem("userType", "hr-admin")
-        localStorage.setItem("userEmail", email)
-        router.push("/hr-admin/dashboard")
-      } else if (userType === "employee" && password === "emp123") {
-        localStorage.setItem("userType", "employee")
-        localStorage.setItem("userEmail", email)
-        router.push("/employee/dashboard")
-      } else {
-        setError("Invalid credentials or user type")
+      const response = await axios.post("http://localhost:3000/api/auth/login", {
+        email,
+        password
+      }, {
+        headers: { "Content-Type": "application/json" }
+      })
+
+
+      const data = response.data
+
+
+      localStorage.setItem("token", data.token)
+      localStorage.setItem("userEmail", data.user.email)
+      localStorage.setItem("userRole", data.user.role)
+
+      switch (data.user.role) {
+        case "SUPER_ADMIN":
+          router.push("/super-admin/dashboard")
+          break
+        case "HR_ADMIN":
+          router.push("/hr-admin/dashboard")
+          break
+        case "EMPLOYEE":
+          router.push("/employee/dashboard")
+          break
+        default:
+          setError("Unknown user role")
       }
-    } catch (err) {
-      setError("Login failed. Please try again.")
+    } catch (err: any) {
+      setError(err.message || "Login failed")
     } finally {
       setLoading(false)
     }
@@ -66,35 +75,6 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="userType">User Type</Label>
-              <Select value={userType} onValueChange={setUserType} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="employee">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Employee
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="hr-admin">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      HR Admin
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="super-admin">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Super Admin
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -129,21 +109,6 @@ export default function LoginPage() {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-
-          <div className="mt-6 text-sm text-muted-foreground">
-            <p className="font-semibold mb-2">Demo Credentials:</p>
-            <div className="space-y-1">
-              <p>
-                <strong>Super Admin:</strong> admin@company.com / admin123
-              </p>
-              <p>
-                <strong>HR Admin:</strong> hr@company.com / hr123
-              </p>
-              <p>
-                <strong>Employee:</strong> any email / emp123
-              </p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

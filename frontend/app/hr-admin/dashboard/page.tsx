@@ -4,34 +4,25 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Plus, Edit, Trash2, Users, LogOut, User, Calendar, MapPin } from "lucide-react"
+import { Plus, Edit, Users, LogOut, User, Calendar, MapPin } from "lucide-react"
+import Link from "next/link"
+import axios from "axios"
+import { toast } from "sonner"
+import { TrainingDeleteAlert } from "./TrainingDeleteAlert"
 
 interface Training {
   id: string
   title: string
-  type: "online" | "offline"
-  description: string
+  mode: "ONLINE" | "OFFLINE"
   startDate: string
   endDate: string
   location?: string
-  department: string[]
-  assignedEmployees: string[]
 }
 
 interface Employee {
@@ -43,87 +34,73 @@ interface Employee {
 }
 
 export default function HRAdminDashboard() {
-  const [trainings, setTrainings] = useState<Training[]>([
-    {
-      id: "1",
-      title: "Cybersecurity Awareness",
-      type: "online",
-      description: "Learn about cybersecurity best practices",
-      startDate: "2024-01-15",
-      endDate: "2024-02-15",
-      department: ["IT", "Finance"],
-      assignedEmployees: ["emp1", "emp2"],
-    },
-    {
-      id: "2",
-      title: "Leadership Workshop",
-      type: "offline",
-      description: "Develop leadership skills",
-      startDate: "2024-01-20",
-      endDate: "2024-01-22",
-      location: "Conference Room A, Building 1",
-      department: ["Management"],
-      assignedEmployees: ["emp3"],
-    },
-  ])
-
-  const [employees] = useState<Employee[]>([
-    { id: "emp1", name: "John Doe", email: "john@company.com", department: "IT", phone: "123-456-7890" },
-    { id: "emp2", name: "Jane Smith", email: "jane@company.com", department: "Finance", phone: "123-456-7891" },
-    { id: "emp3", name: "Mike Johnson", email: "mike@company.com", department: "Management", phone: "123-456-7892" },
-    { id: "emp4", name: "Sarah Wilson", email: "sarah@company.com", department: "IT", phone: "123-456-7893" },
-  ])
-
-  const [selectedDepartment, setSelectedDepartment] = useState("All Departments")
+  const [trainings, setTrainings] = useState<Training[]>()
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [selectedDepartment, setSelectedDepartment] = useState("")
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([])
-  const [newTraining, setNewTraining] = useState({
-    title: "",
-    type: "online" as "online" | "offline",
-    description: "",
-    startDate: "",
-    endDate: "",
-    location: "",
-  })
+  const [selectedTrainingId, setSelectedTrainingId] = useState<string>("")
+  const [selectAllChecked, setSelectAllChecked] = useState(false)
+  const [isAssigning, setIsAssigning] = useState(false)
 
   const router = useRouter()
 
   useEffect(() => {
-    const userType = localStorage.getItem("userType")
-    if (userType !== "hr-admin") {
+    const userType = localStorage.getItem("userRole")
+    if (userType !== "HR_ADMIN") {
       router.push("/")
+      return
     }
+
+    const fetchTrainings = async () => {
+      try {
+        const token = localStorage.getItem("token")
+        const res = await fetch("http://localhost:3000/api/training", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!res.ok) throw new Error("Failed to fetch trainings")
+        const data = await res.json()
+        setTrainings(data.trainings)
+      } catch (error) {
+        console.error("Error fetching trainings:", error)
+      }
+    }
+
+    fetchTrainings()
   }, [router])
 
-  const departments = ["IT", "Finance", "Management", "HR", "Marketing"]
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      if (!selectedDepartment || selectedDepartment === "All Departments") {
+        setEmployees([]);
+        return;
+      }
 
-  const filteredEmployees =
-    selectedDepartment === "All Departments"
-      ? employees
-      : employees.filter((emp) => emp.department === selectedDepartment)
+      try {
+        const token = localStorage.getItem("token")
+        const res = await fetch(`http://localhost:3000/api/user/employees?role=EMPLOYEE&department=${selectedDepartment}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
 
-  const handleCreateTraining = () => {
-    const training: Training = {
-      id: Date.now().toString(),
-      ...newTraining,
-      department: selectedDepartment === "All Departments" ? departments : [selectedDepartment],
-      assignedEmployees: selectedEmployees,
+        if (!res.ok) throw new Error("Failed to fetch employees")
+
+        const data = await res.json()
+        setEmployees(data)
+      } catch (error) {
+        console.error("Error fetching employees:", error)
+      }
     }
-    setTrainings([...trainings, training])
-    setNewTraining({
-      title: "",
-      type: "online",
-      description: "",
-      startDate: "",
-      endDate: "",
-      location: "",
-    })
-    setSelectedEmployees([])
-    setSelectedDepartment("All Departments")
-  }
 
-  const handleDeleteTraining = (id: string) => {
-    setTrainings(trainings.filter((t) => t.id !== id))
-  }
+    fetchEmployees()
+  }, [selectedDepartment])
+
+  const departments = ["IT", "Finance", "Management", "HR", "Civil", "Electrical", "Mechanical"]
+
+  const filteredEmployees = employees ?? []
 
   const handleEmployeeSelection = (employeeId: string, checked: boolean) => {
     if (checked) {
@@ -133,9 +110,73 @@ export default function HRAdminDashboard() {
     }
   }
 
-  const handleSelectAll = () => {
-    const allEmployeeIds = filteredEmployees.map((emp) => emp.id)
-    setSelectedEmployees(allEmployeeIds)
+  const handleSelectAllToggle = (checked: boolean) => {
+    setSelectAllChecked(checked);
+
+    if (checked) {
+      const allEmployeeIds = filteredEmployees.map((emp) => emp.id);
+      setSelectedEmployees(allEmployeeIds);
+    } else {
+      setSelectedEmployees([]);
+    }
+  };
+
+  const handleAssignTraining = async () => {
+    if (!selectedTrainingId || selectedEmployees.length === 0) {
+      toast.error("Please select a training and at least one employee.")
+      return
+    }
+
+    setIsAssigning(true)
+    const token = localStorage.getItem("token")
+
+    try {
+      const response = await axios.post(
+        `http://localhost:3000/api/training/${selectedTrainingId}/enroll`,
+        { userIds: selectedEmployees },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      // Check if the response is successful
+      if (response.status === 200 || response.status === 201) {
+        toast.success(`Successfully assigned ${selectedEmployees.length} employee(s) to training!`)
+
+        // Reset form
+        setSelectedEmployees([])
+        setSelectAllChecked(false)
+        setSelectedTrainingId("")
+        setSelectedDepartment("")
+      } else {
+        throw new Error('Assignment failed')
+      }
+
+    } catch (error) {
+      console.error("Assignment error:", error)
+
+      if (axios.isAxiosError(error)) {
+        // Handle different error scenarios
+        if (error.response?.status === 400) {
+          toast.error("Invalid request. Please check your selections.")
+        } else if (error.response?.status === 401) {
+          toast.error("Unauthorized. Please log in again.")
+        } else if (error.response?.status === 404) {
+          toast.error("Training or employees not found.")
+        } else if ((error.response?.status ?? 0) >= 500) {
+          toast.error("Server error. Please try again later.")
+        } else {
+          toast.error(error.response?.data?.message || "Failed to assign employees to training")
+        }
+      } else {
+        toast.error("Network error. Please check your connection.")
+      }
+    } finally {
+      setIsAssigning(false)
+    }
   }
 
   const handleLogout = () => {
@@ -174,118 +215,44 @@ export default function HRAdminDashboard() {
             <TabsTrigger value="assign">Assign Trainings</TabsTrigger>
           </TabsList>
 
+          {/* Create New Training */}
           <TabsContent value="trainings">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Training Management</h2>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Training
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Create New Training</DialogTitle>
-                    <DialogDescription>Add a new training program for employees</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Training Title</Label>
-                      <Input
-                        id="title"
-                        value={newTraining.title}
-                        onChange={(e) => setNewTraining({ ...newTraining, title: e.target.value })}
-                        placeholder="Enter training title"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="type">Training Type</Label>
-                      <Select
-                        value={newTraining.type}
-                        onValueChange={(value: "online" | "offline") => setNewTraining({ ...newTraining, type: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="online">Online</SelectItem>
-                          <SelectItem value="offline">Offline</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        value={newTraining.description}
-                        onChange={(e) => setNewTraining({ ...newTraining, description: e.target.value })}
-                        placeholder="Enter training description"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="startDate">Start Date</Label>
-                        <Input
-                          id="startDate"
-                          type="date"
-                          value={newTraining.startDate}
-                          onChange={(e) => setNewTraining({ ...newTraining, startDate: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="endDate">End Date</Label>
-                        <Input
-                          id="endDate"
-                          type="date"
-                          value={newTraining.endDate}
-                          onChange={(e) => setNewTraining({ ...newTraining, endDate: e.target.value })}
-                        />
-                      </div>
-                    </div>
-
-                    {newTraining.type === "offline" && (
-                      <div className="space-y-2">
-                        <Label htmlFor="location">Location</Label>
-                        <Input
-                          id="location"
-                          value={newTraining.location}
-                          onChange={(e) => setNewTraining({ ...newTraining, location: e.target.value })}
-                          placeholder="Enter training location"
-                        />
-                      </div>
-                    )}
-
-                    <Button onClick={handleCreateTraining} className="w-full">
-                      Create Training
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <h2 className="text-2xl font-bold">Training Management System</h2>
+              <Button asChild>
+                <Link href="/hr-admin/create-training" target="_blank" rel="noopener noreferrer">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Training
+                </Link>
+              </Button>
             </div>
 
+            {/* List of Trainings */}
             <div className="grid gap-4">
-              {trainings.map((training) => (
+              {(trainings ?? []).map((training) => (
                 <Card key={training.id}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
                         <CardTitle className="flex items-center gap-2">
                           {training.title}
-                          <Badge variant={training.type === "online" ? "default" : "secondary"}>{training.type}</Badge>
+                          <Badge variant={training.mode === "ONLINE" ? "default" : "secondary"}>
+                            {training.mode}
+                          </Badge>
                         </CardTitle>
-                        <CardDescription>{training.description}</CardDescription>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4" />
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/hr-admin/edit-training/${training.id}`} target="_blank" rel="noopener noreferrer">
+                            <Edit className="h-4 w-4" />
+                          </Link>
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDeleteTraining(training.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+
+                        <TrainingDeleteAlert
+                          key={training.id}
+                          training={training}
+                          onDelete={(id) => setTrainings((prev) => (prev ?? []).filter((t) => t.id !== id))}
+                        />
                       </div>
                     </div>
                   </CardHeader>
@@ -294,7 +261,7 @@ export default function HRAdminDashboard() {
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         <span>
-                          {training.startDate} to {training.endDate}
+                          {new Date(training.startDate).toLocaleDateString()} to {new Date(training.endDate).toLocaleDateString()}
                         </span>
                       </div>
                       {training.location && (
@@ -303,10 +270,6 @@ export default function HRAdminDashboard() {
                           <span>{training.location}</span>
                         </div>
                       )}
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        <span>{training.assignedEmployees.length} employees assigned</span>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -314,13 +277,35 @@ export default function HRAdminDashboard() {
             </div>
           </TabsContent>
 
+          {/* Assign Training to Employees */}
           <TabsContent value="assign">
             <Card>
               <CardHeader>
                 <CardTitle>Assign Training to Employees</CardTitle>
-                <CardDescription>Filter employees by department and assign them to training programs</CardDescription>
+                <CardDescription>Select a training and assign employees filtered by department</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Training Selection */}
+                <div className="space-y-2">
+                  <Label htmlFor="training">Select Training</Label>
+                  <Select
+                    onValueChange={(value) => setSelectedTrainingId(value)}
+                    value={selectedTrainingId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a training" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(trainings ?? []).map((training) => (
+                        <SelectItem key={training.id} value={training.id}>
+                          {training.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Department Filter */}
                 <div className="space-y-2">
                   <Label htmlFor="department">Filter by Department</Label>
                   <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
@@ -328,7 +313,7 @@ export default function HRAdminDashboard() {
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="All Departments">All Departments</SelectItem>
+                      <SelectItem value=" ">All Departments</SelectItem>
                       {departments.map((dept) => (
                         <SelectItem key={dept} value={dept}>
                           {dept}
@@ -338,34 +323,49 @@ export default function HRAdminDashboard() {
                   </Select>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">Employees</h3>
-                    <Button variant="outline" onClick={handleSelectAll}>
-                      Select All
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {filteredEmployees.map((employee) => (
-                      <div key={employee.id} className="flex items-center space-x-2 p-2 border rounded">
+                {/* Employee List */}
+                {selectedTrainingId && (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold">Employees</h3>
+                      <div className="flex items-center space-x-2">
+                        <span>Select All</span>
                         <Checkbox
-                          id={employee.id}
-                          checked={selectedEmployees.includes(employee.id)}
-                          onCheckedChange={(checked) => handleEmployeeSelection(employee.id, checked as boolean)}
+                          checked={selectAllChecked}
+                          onCheckedChange={(checked) => handleSelectAllToggle(checked as boolean)}
                         />
-                        <label htmlFor={employee.id} className="flex-1 cursor-pointer">
-                          <div className="font-medium">{employee.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {employee.email} • {employee.department}
-                          </div>
-                        </label>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
 
-                <div className="text-sm text-muted-foreground">{selectedEmployees.length} employee(s) selected</div>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {filteredEmployees.map((employee) => (
+                        <div key={employee.id} className="flex items-center space-x-2 p-2 border rounded">
+                          <Checkbox
+                            id={employee.id}
+                            checked={selectedEmployees.includes(employee.id)}
+                            onCheckedChange={(checked) => handleEmployeeSelection(employee.id, checked as boolean)}
+                          />
+                          <label htmlFor={employee.id} className="flex-1 cursor-pointer">
+                            <div className="font-medium">{employee.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {employee.email} • {employee.department}
+                            </div>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="text-sm text-muted-foreground">{selectedEmployees.length} employee(s) selected</div>
+
+                    {/* Submit Button */}
+                    <Button
+                      onClick={handleAssignTraining}
+                      disabled={isAssigning || !selectedTrainingId || selectedEmployees.length === 0}
+                    >
+                      {isAssigning ? "Assigning..." : "Assign to Training"}
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

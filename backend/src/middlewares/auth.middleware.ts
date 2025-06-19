@@ -21,6 +21,7 @@ export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction)
       userId: string;
       role: string;
     };
+    
     req.user = decoded;
     next();
   } catch {

@@ -1,38 +1,43 @@
 import { Router } from 'express';
-import { updatePhoneNumber, updatePassword, getUsers, getEmployees } from '../controllers/user.controller';
+import { updatePhoneNumber, updatePassword, getUsers, getUser, getCurrentUser } from '../controllers/user.controller';
 import { verifyToken, restrictToRoles } from '../middlewares/auth.middleware';
 const router = Router();
 
-router.use(verifyToken, restrictToRoles('EMPLOYEE'));
 
+router.get("/me",
+    verifyToken,
+    getCurrentUser
+); 
 
-router.put(
+router.get(
+    '/employees',
+    verifyToken,
+    restrictToRoles('HR_ADMIN', 'ADMIN'),
+    getUsers
+);
+
+router.get(
+    '/:id',
+    verifyToken,
+    getUser
+)
+
+router.patch(
     '/update-phone',
     verifyToken,
     restrictToRoles('EMPLOYEE', 'HR_ADMIN'),
     updatePhoneNumber
 );
 
-router.put(
+router.patch(
     '/update-password',
     verifyToken,
     restrictToRoles('EMPLOYEE', 'HR_ADMIN'),
     updatePassword
 );
 
-router.get(
-    '/:department/:role',
-    verifyToken,
-    restrictToRoles('ADMIN'),
-    getUsers
-);
 
 
-router.get(
-    '/employees/:department',
-    verifyToken,
-    restrictToRoles('HR_ADMIN', 'ADMIN'),
-    getEmployees
-);
+
 
 export default router;

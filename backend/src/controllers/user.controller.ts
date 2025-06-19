@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 // import { Prisma } from '@prisma/client';
 
 interface AuthRequest extends Request {
-    user?: { id: string };
+  user?: { userId: string };
 }
 
 
@@ -14,60 +14,131 @@ enum Role {
   ADMIN,
 }
 
+
+export const getUser = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  if (!id) {
+    res.status(400).json({ error: "User ID is required" });
+    return;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        name: true,
+        email: true,
+        phonenumber: true,
+        department: true,
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.status(200).json(user);
+    return;
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    res.status(500).json({ error: "Internal server error" });
+    return;
+  }
+};
+
+export const getCurrentUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phonenumber: true,
+        role: true,
+        department: true,
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json(user);
+    return;
+  } catch (err) {
+    console.error("getCurrentUser error:", err);
+    res.status(500).json({ message: "Server error" });
+    return;
+  }
+};
+
+
 export const updatePhoneNumber = async (req: AuthRequest, res: Response) => {
-    const userId = req.user?.id;
-    const { phoneNumber } = req.body;
+  const userId = req.user?.userId;
+  const { phonenumber } = req.body;
 
-    if (!phoneNumber) {
-        res.status(400).json({ error: 'Phone number is required' });
-        return;
-    }
+  if (!phonenumber) {
+    res.status(400).json({ error: 'Phone number is required' });
+    return;
+  }
 
-    try {
-        await prisma.user.update({
-            where: { id: userId },
-            data: { phonenumber: phoneNumber },
-        });
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { phonenumber: phonenumber },
+    });
 
-        res.json({ message: 'Phone number updated successfully' });
-        return;
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to update phone number' });
-        return;
-    }
+    res.json({ message: 'Phone number updated successfully' });
+    return;
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update phone number' });
+    return;
+  }
 };
 
 export const updatePassword = async (req: AuthRequest, res: Response) => {
-    const userId = req.user?.id;
-    const { currentPassword, newPassword } = req.body;
+  const userId = req.user?.userId;
+  const { currentPassword, newPassword } = req.body;
 
-    if (!currentPassword || !newPassword) {
-        res.status(400).json({ error: 'Both current and new passwords are required' });
-        return;
+  if (!currentPassword || !newPassword) {
+    res.status(400).json({ error: 'Both current and new passwords are required' });
+    return;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
+      res.status(401).json({ error: 'Current password is incorrect' });
+      return;
     }
 
-    try {
-        const user = await prisma.user.findUnique({ where: { id: userId } });
-        if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
-            res.status(401).json({ error: 'Current password is incorrect' });
-            return;
-        }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await prisma.user.update({
-            where: { id: userId },
-            data: { password: hashedPassword },
-        });
-
-        res.json({ message: 'Password updated successfully' });
-        return;
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to update password' });
-        return;
-    }
+    res.json({ message: 'Password updated successfully' });
+    return;
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update password' });
+    return;
+  }
 };
+
+
 
 export const getUsers = async (req: AuthRequest, res: Response) => {
   const { role, department } = req.query;
@@ -75,34 +146,18 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
   try {
     const users = await prisma.user.findMany({
       where: {
-        ...(role && { role: role as any }), // ideally use proper enum type here
+        ...(role && { role: role as any }),
         ...(department && { department: department as string }),
       },
     });
 
-    res.json(users);
+    res.status(200).json(users);
+    return;
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Error fetching users' });
+    return;
   }
 };
 
-
-export const getEmployees = async (req: AuthRequest, res: Response) => {
-  const { department } = req.query;
-
-  try {
-    const employees = await prisma.user.findMany({
-      where: {
-        role: 'EMPLOYEE',
-        ...(department && { department: department as string }),
-      },
-    });
-
-    res.json(employees);
-  } catch (error) {
-    console.error('Error fetching employees:', error);
-    res.status(500).json({ error: 'Error fetching employees' });
-  }
-};
 

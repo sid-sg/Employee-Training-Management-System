@@ -1,51 +1,116 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, Save } from "lucide-react"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, Save } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function HRAdminProfile() {
   const [profile, setProfile] = useState({
-    name: "HR Admin",
-    email: "hr@company.com",
-    phone: "123-456-7890",
-    department: "Human Resources",
-  })
+    name: "",
+    email: "",
+    phonenumber: "",
+    department: "",
+  });
   const [passwords, setPasswords] = useState({
     current: "",
     new: "",
     confirm: "",
-  })
-  const [message, setMessage] = useState("")
-  const router = useRouter()
+  });
+  const [message, setMessage] = useState("");
+  const router = useRouter();
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   useEffect(() => {
-    const userType = localStorage.getItem("userType")
-    if (userType !== "hr-admin") {
-      router.push("/")
+    const role = localStorage.getItem("userRole");
+    if (role !== "HR_ADMIN") {
+      router.push("/");
+      return;
     }
-  }, [router])
 
-  const handleProfileUpdate = () => {
-    setMessage("Profile updated successfully!")
-    setTimeout(() => setMessage(""), 3000)
-  }
+    if (token) {
+      axios
+        .get(`http://localhost:3000/api/user/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        .then((res) => { 
+          setProfile({
+            name: res.data.name,
+            email: res.data.email,
+            phonenumber: res.data.phonenumber ?? "",
+            department: res.data.department,
+          });
+        })
+        .catch((err) => {
+          console.error("Failed to fetch profile", err);
+          setMessage("Failed to load profile.");
+        });
+    }
+  }, [router, token]);
+
+  const handlePhoneUpdate = () => {
+    if (!token) return;
+
+    axios
+      .patch(
+        "http://localhost:3000/api/user/update-phone",
+        { phonenumber: profile.phonenumber },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      .then(() => {
+        setMessage("Phone number updated successfully!");
+        setTimeout(() => setMessage(""), 3000);
+      })
+      .catch((err) => {
+        console.error(err);
+        setMessage("Failed to update phone number.");
+      });
+  };
 
   const handlePasswordUpdate = () => {
+    if (!token) return;
+
     if (passwords.new !== passwords.confirm) {
-      setMessage("New passwords don't match!")
-      return
+      setMessage("New passwords don't match!");
+      return;
     }
-    setMessage("Password updated successfully!")
-    setPasswords({ current: "", new: "", confirm: "" })
-    setTimeout(() => setMessage(""), 3000)
-  }
+
+    axios
+      .patch(
+        "http://localhost:3000/api/user/update-password",
+        {
+          currentPassword: passwords.current,
+          newPassword: passwords.new,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      .then(() => {
+        setMessage("Password updated successfully!");
+        setPasswords({ current: "", new: "", confirm: "" });
+        setTimeout(() => setMessage(""), 3000);
+      })
+      .catch((err) => {
+        console.error(err);
+        setMessage("Failed to update password.");
+      });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,6 +131,7 @@ export default function HRAdminProfile() {
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
+          {/* Profile Info */}
           <Card>
             <CardHeader>
               <CardTitle>Profile Information</CardTitle>
@@ -74,40 +140,32 @@ export default function HRAdminProfile() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  value={profile.name}
-                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                />
+                <Input id="name" value={profile.name} disabled />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={profile.email}
-                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                />
+                <Input id="email" type="email" value={profile.email} disabled />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
                   id="phone"
-                  value={profile.phone}
-                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                  value={profile.phonenumber}
+                  onChange={(e) => setProfile({ ...profile, phonenumber: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="department">Department</Label>
                 <Input id="department" value={profile.department} disabled />
               </div>
-              <Button onClick={handleProfileUpdate}>
+              <Button onClick={handlePhoneUpdate}>
                 <Save className="h-4 w-4 mr-2" />
-                Update Profile
+                Update Phone Number
               </Button>
             </CardContent>
           </Card>
 
+          {/* Change Password */}
           <Card>
             <CardHeader>
               <CardTitle>Change Password</CardTitle>
@@ -148,6 +206,7 @@ export default function HRAdminProfile() {
             </CardContent>
           </Card>
 
+          {/* Status Message */}
           {message && (
             <Alert>
               <AlertDescription>{message}</AlertDescription>
@@ -156,5 +215,5 @@ export default function HRAdminProfile() {
         </div>
       </main>
     </div>
-  )
+  );
 }
