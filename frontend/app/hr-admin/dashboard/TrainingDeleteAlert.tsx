@@ -1,4 +1,3 @@
-// TrainingRow.tsx
 import { useState } from "react"
 import { Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -56,7 +55,10 @@ export function TrainingDeleteAlert({ training, onDelete }: { training: any, onD
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirmDelete} disabled={loading}>
+          <AlertDialogAction
+            className="text-white  bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            onClick={handleConfirmDelete}
+            disabled={loading}>
             {loading ? "Deleting..." : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>

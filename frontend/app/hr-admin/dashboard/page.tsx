@@ -7,14 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Plus, Edit, Users, LogOut, User, Calendar, MapPin } from "lucide-react"
+import { Plus, Users, LogOut, User } from "lucide-react"
 import Link from "next/link"
 import axios from "axios"
 import { toast } from "sonner"
-import { TrainingDeleteAlert } from "./TrainingDeleteAlert"
+import TrainingCard from "./ TrainingCard"
 
 interface Training {
   id: string
@@ -230,49 +229,12 @@ export default function HRAdminDashboard() {
             {/* List of Trainings */}
             <div className="grid gap-4">
               {(trainings ?? []).map((training) => (
-                <Card key={training.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
-                          {training.title}
-                          <Badge variant={training.mode === "ONLINE" ? "default" : "secondary"}>
-                            {training.mode}
-                          </Badge>
-                        </CardTitle>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/hr-admin/edit-training/${training.id}`} target="_blank" rel="noopener noreferrer">
-                            <Edit className="h-4 w-4" />
-                          </Link>
-                        </Button>
+                <TrainingCard
+                  key={training.id}
+                  training={training}
+                  onDelete={(id) => setTrainings((prev) => (prev ?? []).filter((t) => t.id !== id))}
+                />
 
-                        <TrainingDeleteAlert
-                          key={training.id}
-                          training={training}
-                          onDelete={(id) => setTrainings((prev) => (prev ?? []).filter((t) => t.id !== id))}
-                        />
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>
-                          {new Date(training.startDate).toLocaleDateString()} to {new Date(training.endDate).toLocaleDateString()}
-                        </span>
-                      </div>
-                      {training.location && (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          <span>{training.location}</span>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
               ))}
             </div>
           </TabsContent>

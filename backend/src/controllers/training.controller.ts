@@ -11,7 +11,7 @@ export const createTraining = async (req: AuthRequest, res: Response): Promise<v
         res.status(400).json({ error: 'Request body is required' });
         return;
     }
-    const { title, description, mode, location, startDate, endDate } = req.body;
+    const { title, description, mode, location, platform, startDate, endDate } = req.body;
 
     if (!title || !description || !mode || !startDate || !endDate) {
         res.status(400).json({ error: 'Missing required fields' });
@@ -22,6 +22,11 @@ export const createTraining = async (req: AuthRequest, res: Response): Promise<v
         res.status(400).json({ error: 'Location is required for offline trainings' });
         return;
     }
+    
+    if (mode === 'ONLINE' && !platform) {
+        res.status(400).json({ error: 'Platform is required for online trainings' });
+        return;
+    }
 
     try {
         const training = await prisma.training.create({
@@ -30,6 +35,7 @@ export const createTraining = async (req: AuthRequest, res: Response): Promise<v
                 description,
                 mode,
                 location,
+                platform,
                 startDate: new Date(startDate),
                 endDate: new Date(endDate),
                 createdById: req.user!.userId,
@@ -51,10 +57,14 @@ export const updateTraining = async (req: AuthRequest, res: Response): Promise<v
         return;
     }
 
-    const { title, description, mode, location, startDate, endDate } = req.body;
+    const { title, description, mode, location, platform, startDate, endDate } = req.body;
 
     if (mode === 'OFFLINE' && !location) {
         res.status(400).json({ error: 'Location is required for offline trainings' });
+        return;
+    }
+    if (mode === 'ONLINE' && !platform) {
+        res.status(400).json({ error: 'Platform is required for online trainings' });
         return;
     }
 
@@ -72,6 +82,7 @@ export const updateTraining = async (req: AuthRequest, res: Response): Promise<v
                 ...(description && { description }),
                 ...(mode && { mode }),
                 ...(location && { location }),
+                ...(platform && { platform }),
                 ...(startDate && { startDate: new Date(startDate) }),
                 ...(endDate && { endDate: new Date(endDate) }),
             },
@@ -120,6 +131,7 @@ export const getAllTrainings = async (req: AuthRequest, res: Response): Promise<
                 title: true,
                 mode: true,
                 location: true,
+                platform: true,
                 startDate: true,
                 endDate: true,
                 createdAt: true,
@@ -225,7 +237,8 @@ export const enrollUsersInTraining = async (req: AuthRequest, res: Response): Pr
                         training.mode,
                         training.startDate,
                         training.endDate,
-                        training.location || ''
+                        training.location || '',
+                        training.platform || ''
                     )
                 )
             )

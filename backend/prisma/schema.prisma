@@ -32,6 +32,7 @@ model Training {
   title       String
   description String
   mode        TrainingMode
+  platform    String? // for ONLINE
   location    String? // for OFFLINE
   latitude    Float? // for google maps 
   longitude   Float? // for google maps 

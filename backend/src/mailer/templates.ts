@@ -18,7 +18,7 @@ export const onboardingTemplate = (email: string, password: string) => `
     </div>
 `;
 
-export const trainingEnrollmentTemplate = (name: string, title: string, mode: string, startDate: Date, endDate: Date, location: string) => `
+export const trainingEnrollmentTemplate = (name: string, title: string, mode: string, startDate: Date, endDate: Date, location: string, platform: string) => `
     <div style="font-family: Arial, sans-serif; color: #333;">
       <h2 style="color: #2e6c80;">You're enrolled in a new training!</h2>
       <p>Hi ${name},</p>
@@ -29,6 +29,7 @@ export const trainingEnrollmentTemplate = (name: string, title: string, mode: st
         <li><strong>Start Date:</strong> ${startDate}</li>
         <li><strong>End Date:</strong> ${endDate}</li>
         ${mode === 'OFFLINE' && location ? `<li><strong>Location:</strong> ${location}</li>` : ''}
+        ${mode === 'ONLINE' && platform ? `<li><strong>Platform:</strong> ${platform}</li>` : ''}
       </ul>
       <p>Please join the training on time. Reach out to HR for any queries.</p>
     </div>
