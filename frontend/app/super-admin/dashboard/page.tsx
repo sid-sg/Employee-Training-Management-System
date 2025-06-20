@@ -102,7 +102,7 @@ export default function SuperAdminDashboard() {
         <Tabs defaultValue="employees" className="space-y-4">
           <TabsList>
             <TabsTrigger value="employees">Upload Employees</TabsTrigger>
-            <TabsTrigger value="hr-admins">Upload HR Admins</TabsTrigger>
+            <TabsTrigger value="hr_admins">Upload HR Admins</TabsTrigger>
           </TabsList>
 
           <TabsContent value="employees">
@@ -131,7 +131,7 @@ export default function SuperAdminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="hr-admins">
+          <TabsContent value="hr_admins">
             <Card>
               <CardHeader>
                 <CardTitle>Upload HR Admin Data</CardTitle>

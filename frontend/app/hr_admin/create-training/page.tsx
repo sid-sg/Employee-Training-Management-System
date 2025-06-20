@@ -19,10 +19,9 @@ export default function CreateTrainingPage() {
         startDate: "",
         endDate: "",
         location: "",
+        platform: "",
     })
     const router = useRouter()
-
-
     useEffect(() => {
         const userType = localStorage.getItem("userRole")
         if (userType !== "HR_ADMIN") {
@@ -76,6 +75,12 @@ export default function CreateTrainingPage() {
                     <div>
                         <Label>Location</Label>
                         <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+                    </div>
+                )}
+                {form.mode === "ONLINE" && (
+                    <div>
+                        <Label>platform</Label>
+                        <Input value={form.platform} onChange={(e) => setForm({ ...form, platform: e.target.value })} />
                     </div>
                 )}
                 <div>

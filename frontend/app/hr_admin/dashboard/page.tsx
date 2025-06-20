@@ -14,6 +14,7 @@ import Link from "next/link"
 import axios from "axios"
 import { toast } from "sonner"
 import TrainingCard from "./ TrainingCard"
+import Navbar from "@/components/navbar"
 
 interface Training {
   id: string
@@ -185,27 +186,8 @@ export default function HRAdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <Users className="h-6 w-6 text-primary" />
-              <h1 className="text-xl font-semibold">HR Admin Dashboard</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-              <Button variant="outline" onClick={() => router.push("/hr-admin/profile")}>
-                <User className="h-4 w-4 mr-2" />
-                Profile
-              </Button>
-              <Button variant="outline" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navbar role="HR_ADMIN" />
+
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="trainings" className="space-y-6">
@@ -219,7 +201,7 @@ export default function HRAdminDashboard() {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">Training Management System</h2>
               <Button asChild>
-                <Link href="/hr-admin/create-training" target="_blank" rel="noopener noreferrer">
+                <Link href="/hr_admin/create-training" target="_blank" rel="noopener noreferrer">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Training
                 </Link>

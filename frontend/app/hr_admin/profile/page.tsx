@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Save } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import Navbar from "@/components/navbar";
 
 export default function HRAdminProfile() {
   const [profile, setProfile] = useState({
@@ -114,21 +115,7 @@ export default function HRAdminProfile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" onClick={() => router.back()}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              <h1 className="text-xl font-semibold">Profile Settings</h1>
-            </div>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
-
+      <Navbar role="HR_ADMIN"/>
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Profile Info */}

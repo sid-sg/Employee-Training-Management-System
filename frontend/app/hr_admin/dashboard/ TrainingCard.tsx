@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Edit, Calendar, MapPin, Globe } from "lucide-react"
 import Link from "next/link"
 import { TrainingDeleteAlert } from "./TrainingDeleteAlert"
+import { useRouter } from "next/navigation"
 
 interface Training {
     id: string
@@ -17,8 +18,13 @@ interface Training {
 
 
 const TrainingCard = ({ training, onDelete }: { training: Training, onDelete: (id: string) => void }) => {
+    const router = useRouter()
+
     return (
-        <Card key={training.id} className="cursor-pointer transition-transform duration-200 hover:scale-[1.02] hover:shadow-lg hover:bg-accent/40 dark:hover:bg-accent/20">
+        <Card
+            key={training.id}
+            className="cursor-pointer transition-transform duration-200 hover:scale-[1.02] hover:shadow-lg hover:bg-accent/40 dark:hover:bg-accent/20"
+            onClick={() => router.push(`/hr_admin/training/${training.id}`)}>
             <CardHeader>
                 <div className="flex justify-between items-start">
                     <div>
@@ -30,8 +36,8 @@ const TrainingCard = ({ training, onDelete }: { training: Training, onDelete: (i
                         </CardTitle>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href={`/hr-admin/edit-training/${training.id}`} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" size="sm" asChild onClick={(e) => e.stopPropagation()}>
+                            <Link href={`/hr_admin/edit-training/${training.id}`} target="_blank" rel="noopener noreferrer">
                                 <Edit className="h-4 w-4" />
                             </Link>
                         </Button>
