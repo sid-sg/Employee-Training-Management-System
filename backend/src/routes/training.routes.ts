@@ -1,5 +1,5 @@
 import express from 'express';
-import { createTraining, deleteTraining, getAllTrainings, getTraining, getEnrolledTrainings, updateTraining, enrollUsersInTraining } from '../controllers/training.controller';
+import { createTraining, deleteTraining, getAllTrainings, getTraining, getEnrolledUsersOfTraining, updateTraining, enrollUsersInTraining, deenrollUsersFromTraining } from '../controllers/training.controller';
 import { verifyToken, restrictToRoles } from '../middlewares/auth.middleware';
 
 const router = express.Router();
@@ -26,17 +26,17 @@ router.delete(
 );
 
 router.get(
+    '/:trainingId/enrolled-users',
+    verifyToken,
+    getEnrolledUsersOfTraining
+);
+
+router.get(
     '/:id',
     verifyToken,
     getTraining
 );
 
-router.get(
-    '/enrolled',
-    verifyToken,
-    restrictToRoles('EMPLOYEE'),
-    getEnrolledTrainings
-);
 
 
 router.get(
@@ -57,7 +57,7 @@ router.post(
     '/:trainingId/deenroll',
     verifyToken,
     restrictToRoles('HR_ADMIN'),
-    enrollUsersInTraining
+    deenrollUsersFromTraining
 );
 
 export default router;

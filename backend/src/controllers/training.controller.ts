@@ -22,7 +22,7 @@ export const createTraining = async (req: AuthRequest, res: Response): Promise<v
         res.status(400).json({ error: 'Location is required for offline trainings' });
         return;
     }
-    
+
     if (mode === 'ONLINE' && !platform) {
         res.status(400).json({ error: 'Platform is required for online trainings' });
         return;
@@ -168,25 +168,36 @@ export const getTraining = async (req: AuthRequest, res: Response): Promise<void
 
 };
 
-export const getEnrolledTrainings = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getEnrolledUsersOfTraining = async (req: AuthRequest, res: Response): Promise<void> => {
+    const { trainingId } = req.params;
+
+    if (!trainingId) {
+        res.status(400).json({ error: "Training ID is required" });
+        return;
+    }
+
     try {
-        const trainings = await prisma.trainingEnrollment.findMany({
-            where: {
-                employeeId: req.user!.userId,
-            },
-            include: {
-                training: true,
-            },
+        const enrolledUsers = await prisma.trainingEnrollment.findMany({
+            where: { trainingId },
+            include: { employee: true }
         });
 
-        const result = trainings.map((enrollment) => enrollment.training);
+        res.json({
+            users: enrolledUsers.map(({ employee }) => ({
+                id: employee.id,
+                name: employee.name,
+                email: employee.email,
+                department: employee.department,
+                phone: employee.phonenumber
+            }))
+        });
 
-        res.status(200).json({ trainings: result });
-    } catch (error) {
-        console.error('Error fetching enrolled trainings:', error);
-        res.status(500).json({ error: 'Internal server error' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch enrolled users" });
     }
 };
+
 
 export const enrollUsersInTraining = async (req: AuthRequest, res: Response): Promise<void> => {
     const { trainingId } = req.params;
@@ -253,7 +264,7 @@ export const enrollUsersInTraining = async (req: AuthRequest, res: Response): Pr
 
 };
 
-export const disenrollUsersFromTraining = async (req: AuthRequest, res: Response): Promise<void> => {
+export const deenrollUsersFromTraining = async (req: AuthRequest, res: Response): Promise<void> => {
     const { trainingId } = req.params;
     const { userIds } = req.body;
 

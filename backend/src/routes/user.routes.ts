@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { updatePhoneNumber, updatePassword, getUsers, getUser, getCurrentUser } from '../controllers/user.controller';
+import { updatePhoneNumber, updatePassword, getUsers, getUser, getCurrentUser, getEnrolledTrainingsOfUser } from '../controllers/user.controller';
 import { verifyToken, restrictToRoles } from '../middlewares/auth.middleware';
 const router = Router();
 
@@ -36,7 +36,11 @@ router.patch(
     updatePassword
 );
 
-
+router.get(
+    '/:id/enrolled-trainings',
+    verifyToken,
+    getEnrolledTrainingsOfUser
+);
 
 
 
