@@ -80,7 +80,7 @@ export default function HRAdminDashboard() {
 
       try {
         const token = localStorage.getItem("token")
-        const res = await fetch(`http://localhost:3000/api/user/users?role=HR_ADMIN&department=${selectedDepartment}`, {
+        const res = await fetch(`http://localhost:3000/api/user/users?role=EMPLOYEE&department=${selectedDepartment}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -142,11 +142,9 @@ export default function HRAdminDashboard() {
         }
       )
 
-      // Check if the response is successful
       if (response.status === 200 || response.status === 201) {
         toast.success(`Successfully assigned ${selectedEmployees.length} employee(s) to training!`)
 
-        // Reset form
         setSelectedEmployees([])
         setSelectAllChecked(false)
         setSelectedTrainingId("")
@@ -159,7 +157,6 @@ export default function HRAdminDashboard() {
       console.error("Assignment error:", error)
 
       if (axios.isAxiosError(error)) {
-        // Handle different error scenarios
         if (error.response?.status === 400) {
           toast.error("Invalid request. Please check your selections.")
         } else if (error.response?.status === 401) {

@@ -161,24 +161,47 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
 };
 
 
+// export const getEnrolledTrainingsOfUser = async (req: AuthRequest, res: Response): Promise<void> => {
+// 	  const { userId } = req.params;
+
+//   try {
+// 		const trainings = await prisma.trainingEnrollment.findMany({
+// 			where: {
+// 				employeeId: userId,
+// 			},
+// 			include: {
+// 				training: true,
+// 			},
+// 		});
+
+// 		const result = trainings.map((enrollment) => enrollment.training);
+
+// 		res.status(200).json({ trainings: result });
+// 	} catch (error) {
+// 		console.error('Error fetching enrolled trainings:', error);
+// 		res.status(500).json({ error: 'Internal server error' });
+// 	}
+// };
+
 export const getEnrolledTrainingsOfUser = async (req: AuthRequest, res: Response): Promise<void> => {
-	  const { userId } = req.params;
-
   try {
-		const trainings = await prisma.trainingEnrollment.findMany({
-			where: {
-				employeeId: userId,
-			},
-			include: {
-				training: true,
-			},
-		});
+    const userId = req.user!.userId;
 
-		const result = trainings.map((enrollment) => enrollment.training);
+    const trainings = await prisma.trainingEnrollment.findMany({
+      where: {
+        employeeId: userId,
+      },
+      include: {
+        training: true,
+      },
+    });
 
-		res.status(200).json({ trainings: result });
-	} catch (error) {
-		console.error('Error fetching enrolled trainings:', error);
-		res.status(500).json({ error: 'Internal server error' });
-	}
+    const result = trainings.map((enrollment) => enrollment.training);
+
+    res.status(200).json({ trainings: result });
+  } catch (error) {
+    console.error('Error fetching enrolled trainings:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };
+

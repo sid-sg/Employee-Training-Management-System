@@ -7,13 +7,19 @@ const router = Router();
 router.get("/me",
     verifyToken,
     getCurrentUser
-); 
+);
 
 router.get(
     '/users',
     verifyToken,
     restrictToRoles('HR_ADMIN', 'ADMIN'),
     getUsers
+);
+
+router.get(
+    '/enrolled-trainings',
+    verifyToken,
+    getEnrolledTrainingsOfUser
 );
 
 router.get(
@@ -36,11 +42,12 @@ router.patch(
     updatePassword
 );
 
-router.get(
-    '/:id/enrolled-trainings',
-    verifyToken,
-    getEnrolledTrainingsOfUser
-);
+// router.get(
+//     '/:id/enrolled-trainings',
+//     verifyToken,
+//     getEnrolledTrainingsOfUser
+// );
+
 
 
 

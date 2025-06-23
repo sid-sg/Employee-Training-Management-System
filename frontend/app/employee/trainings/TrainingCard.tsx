@@ -35,6 +35,14 @@ const TrainingCard = ({ training }: { training: Training }) => {
                             </Badge>
                         </CardTitle>
                     </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" asChild onClick={(e) => e.stopPropagation()}>
+                            <Link href={`/hr_admin/edit-training/${training.id}`} target="_blank" rel="noopener noreferrer">
+                                <Edit className="h-4 w-4" />
+                            </Link>
+                        </Button>
+
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>

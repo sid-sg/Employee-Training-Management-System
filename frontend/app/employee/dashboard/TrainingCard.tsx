@@ -24,7 +24,7 @@ const TrainingCard = ({ training }: { training: Training }) => {
         <Card
             key={training.id}
             className="cursor-pointer transition-transform duration-200 hover:scale-[1.02] hover:shadow-lg hover:bg-accent/40 dark:hover:bg-accent/20"
-            onClick={() => router.push(`/admin/trainings/${training.id}`)}>
+            onClick={() => router.push(`/employee/trainings/${training.id}`)}>
             <CardHeader>
                 <div className="flex justify-between items-start">
                     <div>
