@@ -54,7 +54,10 @@ const handleCSVUpload = async (req: Request, res: Response, role: 'EMPLOYEE' | '
                 console.log(`Created user ${email} with password: ${password}`);
                 createdUsers.push({ email, password });
             }
-
+            
+            if (!req.file) {
+                return res.status(400).json({ error: 'CSV file required or invalid file type/size exceeded' });
+            }
 
             if (req.file) {
                 fs.unlinkSync(req.file.path);

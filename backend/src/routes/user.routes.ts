@@ -10,7 +10,7 @@ router.get("/me",
 ); 
 
 router.get(
-    '/employees',
+    '/users',
     verifyToken,
     restrictToRoles('HR_ADMIN', 'ADMIN'),
     getUsers

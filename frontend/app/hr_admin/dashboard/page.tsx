@@ -80,7 +80,7 @@ export default function HRAdminDashboard() {
 
       try {
         const token = localStorage.getItem("token")
-        const res = await fetch(`http://localhost:3000/api/user/employees?role=EMPLOYEE&department=${selectedDepartment}`, {
+        const res = await fetch(`http://localhost:3000/api/user/users?role=HR_ADMIN&department=${selectedDepartment}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

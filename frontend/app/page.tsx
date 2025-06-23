@@ -35,13 +35,12 @@ export default function LoginPage() {
 
       const data = response.data
 
-
       localStorage.setItem("token", data.token)
       localStorage.setItem("userEmail", data.user.email)
       localStorage.setItem("userRole", data.user.role)
 
       switch (data.user.role) {
-        case "SUPER_ADMIN":
+        case "ADMIN":
           router.push("/admin/dashboard")
           break
         case "HR_ADMIN":

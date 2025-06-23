@@ -123,9 +123,6 @@ export const deleteTraining = async (req: AuthRequest, res: Response): Promise<v
 export const getAllTrainings = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const trainings = await prisma.training.findMany({
-            where: {
-                createdById: req.user!.userId,
-            },
             select: {
                 id: true,
                 title: true,
