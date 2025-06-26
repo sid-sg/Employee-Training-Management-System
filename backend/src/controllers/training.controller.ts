@@ -288,3 +288,99 @@ export const deenrollUsersFromTraining = async (req: AuthRequest, res: Response)
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+
+export const submitTrainingFeedback = async (req: AuthRequest, res: Response): Promise<void> => {
+    const { id: trainingId } = req.params
+    const { userId } = req.user!
+
+    const { userInfo, trainingFeedback, trainerFeedback, comments, modeOfAttendance } = req.body
+
+    try {
+        const existing = await prisma.trainingFeedback.findUnique({
+            where: {
+                employeeId_trainingId: {
+                    employeeId: userId,
+                    trainingId,
+                },
+            },
+        })
+
+        if (existing) {
+            res.status(400).json({ error: 'Feedback already submitted for this training.' })
+            return
+        }
+
+        const training = await prisma.training.findUnique({
+            where: { id: trainingId },
+            select: {
+                totalParticipants: true,
+                totalRating: true,
+            },
+        })
+
+        const participantCount = training?.totalParticipants ?? 0
+        const currentTotalRating = training?.totalRating ?? 0
+
+        const allRatings = [
+            trainingFeedback.duration,
+            trainingFeedback.pace,
+            trainingFeedback.content,
+            trainingFeedback.relevance,
+            trainingFeedback.usefulness,
+            trainingFeedback.confidence,
+            trainerFeedback.knowledge,
+            trainerFeedback.explanation,
+            trainerFeedback.answers,
+            trainerFeedback.utility,
+            trainerFeedback.information,
+        ]
+
+        const numericRatings = allRatings.map(r => parseInt(r)).filter(n => !isNaN(n))
+        const ratingSum = numericRatings.reduce((acc, n) => acc + n, 0)
+        const avgRating = numericRatings.length > 0 ? ratingSum / numericRatings.length : 0
+
+
+        const updatedRating = ((currentTotalRating * participantCount) + avgRating) / (participantCount + 1)
+
+        await prisma.trainingFeedback.create({
+            data: {
+                trainingId,
+                employeeId: userId,
+                participantName: userInfo.name,
+                department: userInfo.department,
+                durationRating: +trainingFeedback.duration,
+                paceRating: +trainingFeedback.pace,
+                contentRating: +trainingFeedback.content,
+                relevanceRating: +trainingFeedback.relevance,
+                usefulnessRating: +trainingFeedback.usefulness,
+                confidenceRating: +trainingFeedback.confidence,
+                trainerKnowledgeRating: +trainerFeedback.knowledge,
+                trainerExplanationRating: +trainerFeedback.explanation,
+                trainerAnswersRating: +trainerFeedback.answers,
+                trainerUtilityRating: +trainerFeedback.utility,
+                trainerInformationRating: +trainerFeedback.information,
+                trainingLikes: comments.trainingLikes,
+                trainingImprovements: comments.trainingImprovements,
+                trainerStrengths: comments.trainerStrengths,
+                trainerRecommendations: comments.trainerRecommendations,
+                modeOfAttendance,
+            },
+        })
+
+        await prisma.training.update({
+            where: { id: trainingId },
+            data: {
+                totalParticipants: participantCount + 1,
+                totalRating: updatedRating,
+            },
+        })
+
+        res.status(201).json({ message: 'Feedback submitted successfully.' })
+        return
+    } catch (err) {
+        console.error('Error submitting feedback:', err)
+        res.status(500).json({ error: 'Internal server error.' })
+        return
+    }
+}

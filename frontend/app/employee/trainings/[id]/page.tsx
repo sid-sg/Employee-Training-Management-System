@@ -1,11 +1,12 @@
 "use client"
 
 import axios from "axios"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, MapPin, Globe, BookOpenText, Users2, Mail, Phone } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Calendar, MapPin, Globe, BookOpenText, MessageSquare } from "lucide-react"
 import Navbar from "@/components/navbar"
 
 interface User {
@@ -18,6 +19,7 @@ interface User {
 
 export default function TrainingDetailPage() {
     const params = useParams()
+    const router = useRouter()
     const id = params.id as string
 
     const [training, setTraining] = useState({
@@ -30,6 +32,9 @@ export default function TrainingDetailPage() {
         endDate: "",
     })
 
+    const handleFeedbackClick = () => {
+        router.push(`/employee/trainings/${id}/feedback`)
+    }
 
     useEffect(() => {
         if (id) {
@@ -111,6 +116,18 @@ export default function TrainingDetailPage() {
                         <CardDescription className="mt-2 text-muted-foreground text-base">
                             {training.description || "No description provided."}
                         </CardDescription>
+
+                        {/* Feedback Button */}
+                        <div className="pt-4 border-t">
+                            <Button
+                                onClick={handleFeedbackClick}
+                                className="w-full sm:w-auto"
+                                size="lg"
+                            >
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                Provide Training Feedback
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
 
