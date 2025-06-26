@@ -82,6 +82,37 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const searchEmployees = async (req: AuthRequest, res: Response) => {
+    const query = req.query.q as string;
+
+    try {
+        const users = await prisma.user.findMany({
+            where: {
+                role: "EMPLOYEE",
+                OR: [
+                    { name: { contains: query, mode: "insensitive" } },
+                    { email: { contains: query, mode: "insensitive" } },
+                    { department: { contains: query, mode: "insensitive" } },
+                ],
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                department: true,
+            },
+            orderBy: {
+                name: "asc",
+            },
+        });
+
+        res.status(200).json({ users });
+    } catch (error) {
+        console.error("Error searching users:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
 
 export const updatePhoneNumber = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.userId;

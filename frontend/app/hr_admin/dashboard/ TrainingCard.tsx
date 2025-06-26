@@ -37,7 +37,7 @@ const TrainingCard = ({ training, onDelete }: { training: Training, onDelete: (i
                     </div>
                     <div className="flex gap-2">
                         <Button variant="outline" size="sm" asChild onClick={(e) => e.stopPropagation()}>
-                            <Link href={`/hr_admin/edit-training/${training.id}`} target="_blank" rel="noopener noreferrer">
+                            <Link href={`/hr_admin/edit-training/${training.id}`}  rel="noopener noreferrer">
                                 <Edit className="h-4 w-4" />
                             </Link>
                         </Button>

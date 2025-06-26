@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { updatePhoneNumber, updatePassword, getUsers, getUser, getCurrentUser, getEnrolledTrainingsOfUser } from '../controllers/user.controller';
+import { updatePhoneNumber, updatePassword, getUsers, getUser, getCurrentUser, getEnrolledTrainingsOfUser, searchEmployees } from '../controllers/user.controller';
 import { verifyToken, restrictToRoles } from '../middlewares/auth.middleware';
 const router = Router();
 
@@ -14,6 +14,13 @@ router.get(
     verifyToken,
     restrictToRoles('HR_ADMIN', 'ADMIN'),
     getUsers
+);
+
+router.get(
+    '/search',
+    verifyToken,
+    restrictToRoles('HR_ADMIN', 'ADMIN'),
+    searchEmployees
 );
 
 router.get(
