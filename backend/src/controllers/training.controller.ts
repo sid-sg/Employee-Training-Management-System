@@ -184,6 +184,7 @@ export const getEnrolledUsersOfTraining = async (req: AuthRequest, res: Response
             users: enrolledUsers.map(({ employee }) => ({
                 id: employee.id,
                 name: employee.name,
+                employeeid: employee.employeeid,
                 email: employee.email,
                 department: employee.department,
                 phone: employee.phonenumber
@@ -196,6 +197,51 @@ export const getEnrolledUsersOfTraining = async (req: AuthRequest, res: Response
     }
 };
 
+export const getAvailableEmployeesForTraining = async (req: AuthRequest, res: Response): Promise<void> => {
+    const { trainingId } = req.params;
+
+    if (!trainingId) {
+        res.status(400).json({ error: "Training ID is required" });
+        return;
+    }
+
+    try {
+        // Get all enrolled employee IDs for this training
+        const enrolledEmployeeIds = await prisma.trainingEnrollment.findMany({
+            where: { trainingId },
+            select: { employeeId: true }
+        });
+
+        const enrolledIds = enrolledEmployeeIds.map(enrollment => enrollment.employeeId);
+
+        // Get all employees who are not enrolled in this training
+        const availableEmployees = await prisma.user.findMany({
+            where: {
+                id: { notIn: enrolledIds },
+                role: 'EMPLOYEE' // Only show employees, not admins or HR admins
+            },
+            select: {
+                id: true,
+                name: true,
+                employeeid: true,
+                email: true,
+                department: true,
+                phonenumber: true
+            },
+            orderBy: {
+                name: 'asc'
+            }
+        });
+
+        res.json({
+            employees: availableEmployees
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch available employees" });
+    }
+};
 
 export const enrollUsersInTraining = async (req: AuthRequest, res: Response): Promise<void> => {
     const { trainingId } = req.params;

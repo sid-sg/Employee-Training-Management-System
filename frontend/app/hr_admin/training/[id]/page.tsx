@@ -5,23 +5,34 @@ import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, MapPin, Globe, BookOpenText, Users2, Mail, Phone } from "lucide-react"
+import { Calendar, MapPin, Globe, BookOpenText } from "lucide-react"
 import Navbar from "@/components/navbar"
 import EnrolledEmployeesCard from "./EnrolledEmployeesCard"
 
 interface User {
     id: string
     name: string
+    employeeid: string
     email: string
     department: string
     phonenumber: string
+}
+
+interface Training {
+    title: string
+    description: string
+    mode: string
+    location: string
+    platform: string
+    startDate: string
+    endDate: string
 }
 
 export default function TrainingDetailPage() {
     const params = useParams()
     const id = params.id as string
 
-    const [training, setTraining] = useState({
+    const [training, setTraining] = useState<Training>({
         title: "",
         description: "",
         mode: "",
@@ -32,70 +43,109 @@ export default function TrainingDetailPage() {
     })
 
     const [enrolledUsers, setEnrolledUsers] = useState<User[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
-    useEffect(() => {
-        if (id) {
-            // Fetch Training Details
-            axios
-                .get(`http://localhost:3000/api/training/${id}`, {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
-                })
-                .then((res) => {
-                    const trainingData = res.data.training[0]
-                    setTraining({
-                        title: trainingData.title || "",
-                        description: trainingData.description || "",
-                        mode: trainingData.mode || "",
-                        location: trainingData.location || "",
-                        platform: trainingData.platform || "",
-                        startDate: trainingData.startDate
-                            ? new Date(trainingData.startDate).toLocaleDateString()
-                            : "",
-                        endDate: trainingData.endDate
-                            ? new Date(trainingData.endDate).toLocaleDateString()
-                            : "",
-                    })
-                })
-                .catch((err) => {
-                    console.error("Failed to fetch training:", err)
-                })
+    const fetchTrainingDetails = async () => {
+        try {
+            const token = localStorage.getItem("token")
+            if (!token) {
+                setError("No authentication token found")
+                return
+            }
 
-            // Fetch Enrolled Users
-            axios
-                .get(`http://localhost:3000/api/training/${id}/enrolled-users`, {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
+            const response = await axios.get(`http://localhost:3000/api/training/${id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+
+            const trainingData = response.data.training[0]
+            if (trainingData) {
+                setTraining({
+                    title: trainingData.title || "",
+                    description: trainingData.description || "",
+                    mode: trainingData.mode || "",
+                    location: trainingData.location || "",
+                    platform: trainingData.platform || "",
+                    startDate: trainingData.startDate
+                        ? new Date(trainingData.startDate).toLocaleDateString()
+                        : "",
+                    endDate: trainingData.endDate
+                        ? new Date(trainingData.endDate).toLocaleDateString()
+                        : "",
                 })
-                .then((res) => {
-                    setEnrolledUsers(res.data.users || [])
-                })
-                .catch((err) => {
-                    console.error("Failed to fetch enrolled users:", err)
-                })
+            }
+        } catch (err) {
+            console.error("Failed to fetch training:", err)
+            setError("Failed to fetch training details")
         }
-    }, [id])
+    }
 
     const fetchEnrolledUsers = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const res = await axios.get(`http://localhost:3000/api/training/${id}/enrolled-users`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setEnrolledUsers(res.data.users);
-        } catch (error) {
-            console.error("Failed to fetch enrolled users:", error);
+            const token = localStorage.getItem("token")
+            if (!token) {
+                setError("No authentication token found")
+                return
+            }
+
+            const response = await axios.get(`http://localhost:3000/api/training/${id}/enrolled-users`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+
+            setEnrolledUsers(response.data.users || [])
+        } catch (err) {
+            console.error("Failed to fetch enrolled users:", err)
+            // Don't set error here as training details might still be valid
         }
-    };
+    }
+
+    const fetchAllData = async () => {
+        setIsLoading(true)
+        setError(null)
+
+        await Promise.all([
+            fetchTrainingDetails(),
+            fetchEnrolledUsers()
+        ])
+
+        setIsLoading(false)
+    }
 
     useEffect(() => {
         if (id) {
-            fetchEnrolledUsers();
+            fetchAllData()
         }
-    }, [id]);
+    }, [id])
 
+    if (isLoading) {
+        return (
+            <div>
+                <Navbar role="HR_ADMIN" />
+                <div className="max-w-7xl mx-auto mt-10 px-4">
+                    <div className="flex justify-center items-center h-64">
+                        <p className="text-muted-foreground">Loading training details...</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div>
+                <Navbar role="HR_ADMIN" />
+                <div className="max-w-7xl mx-auto mt-10 px-4">
+                    <div className="flex justify-center items-center h-64">
+                        <p className="text-destructive">{error}</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div>
@@ -105,7 +155,7 @@ export default function TrainingDetailPage() {
                     <CardHeader>
                         <CardTitle className="text-3xl flex items-center gap-2">
                             <BookOpenText className="h-7 w-7 text-primary" />
-                            {training.title}
+                            {training.title || "Training Details"}
                         </CardTitle>
                     </CardHeader>
 
@@ -148,44 +198,11 @@ export default function TrainingDetailPage() {
                     </CardContent>
                 </Card>
 
-                {/* Enrolled Employees List */}
-                {/* <Card className="shadow-lg hover:shadow-xl transition duration-300 bg-card">
-                    <CardHeader>
-                        <CardTitle className="text-2xl flex items-center gap-2">
-                            <Users2 className="h-6 w-6 text-primary" />
-                            Enrolled Employees
-                        </CardTitle>
-                        <CardDescription>
-                            {enrolledUsers.length > 0
-                                ? `${enrolledUsers.length} employee(s) enrolled`
-                                : "No employees enrolled in this training."}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {enrolledUsers.map((user) => (
-                            <div
-                                key={user.id}
-                                className="p-3 border rounded-md flex flex-col md:flex-row md:items-center justify-between space-y-2 md:space-y-0 md:space-x-4 bg-accent/30 dark:bg-accent/20"
-                            >
-                                <div>
-                                    <p className="font-medium">{user.name}</p>
-                                    <p className="text-sm text-muted-foreground">{user.department}</p>
-                                </div>
-                                <div className="flex gap-4 items-center text-sm text-muted-foreground">
-                                    <div className="flex items-center gap-1">
-                                        <Mail className="h-4 w-4" />
-                                        {user.email}
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <Phone className="h-4 w-4" />
-                                        {user.phone}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </CardContent>
-                </Card> */}
-                <EnrolledEmployeesCard enrolledUsers={enrolledUsers} trainingId={id} refreshData={fetchEnrolledUsers } />
+                <EnrolledEmployeesCard
+                    enrolledUsers={enrolledUsers}
+                    trainingId={id}
+                    refreshData={fetchEnrolledUsers}
+                />
             </div>
         </div>
     )

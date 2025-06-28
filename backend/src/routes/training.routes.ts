@@ -1,5 +1,5 @@
 import express from 'express';
-import { createTraining, deleteTraining, getAllTrainings, getTraining, getEnrolledUsersOfTraining, updateTraining, enrollUsersInTraining, deenrollUsersFromTraining, submitTrainingFeedback } from '../controllers/training.controller';
+import { createTraining, deleteTraining, getAllTrainings, getTraining, getEnrolledUsersOfTraining, getAvailableEmployeesForTraining, updateTraining, enrollUsersInTraining, deenrollUsersFromTraining, submitTrainingFeedback } from '../controllers/training.controller';
 import { verifyToken, restrictToRoles } from '../middlewares/auth.middleware';
 
 const router = express.Router();
@@ -29,6 +29,13 @@ router.get(
     '/:trainingId/enrolled-users',
     verifyToken,
     getEnrolledUsersOfTraining
+);
+
+router.get(
+    '/:trainingId/available-employees',
+    verifyToken,
+    restrictToRoles('HR_ADMIN'),
+    getAvailableEmployeesForTraining
 );
 
 router.get(
