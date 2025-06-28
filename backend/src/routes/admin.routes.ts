@@ -10,11 +10,37 @@ const router = express.Router();
  * @swagger
  * /admin/upload-employees:
  *   post:
- *     summary: Upload Employees from .csv file
+ *     summary: Upload Employees from .csv file or create single employee
  *     tags: [Admin]
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: CSV file for bulk upload
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               employeeid:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               department:
+ *                 type: string
+ *               phonenumber:
+ *                 type: string
  *     responses:
  *       200:
  *         description: List of users who are created
+ *       201:
+ *         description: Single user created successfully
  */
 router.post(
     '/upload-employees',
@@ -24,16 +50,41 @@ router.post(
     uploadEmployees
 );
 
-
 /**
  * @swagger
  * /admin/upload-hr-admins:
  *   post:
- *     summary: Upload HR Admins from .csv file
+ *     summary: Upload HR Admins from .csv file or create single HR admin
  *     tags: [Admin]
+ *     requestBody:
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: CSV file for bulk upload
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               employeeid:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               department:
+ *                 type: string
+ *               phonenumber:
+ *                 type: string
  *     responses:
  *       200:
  *         description: List of users who are created
+ *       201:
+ *         description: Single user created successfully
  */
 router.post(
     '/upload-hr-admins',
@@ -42,6 +93,5 @@ router.post(
     uploadCSV.single('file'),
     uploadHRAdmins
 );
-
 
 export default router;

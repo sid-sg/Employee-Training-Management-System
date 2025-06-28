@@ -1,7 +1,7 @@
-export const onboardingTemplate = (email: string, password: string) => `
+export const onboardingTemplate = (name: string, email: string, password: string) => `
     <div style="font-family: Arial, sans-serif; color: #333; max-width: 500px; margin: auto;">
       <h2 style="color: #2e6c80;">Welcome to the Training Portal!</h2>
-      <p>Hello,</p>
+      <p>Hello ${name},</p>
       <p>Your login credentials are as follows:</p>
       <table style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">
         <tr>
@@ -21,7 +21,7 @@ export const onboardingTemplate = (email: string, password: string) => `
 export const trainingEnrollmentTemplate = (name: string, title: string, mode: string, startDate: Date, endDate: Date, location: string, platform: string) => `
     <div style="font-family: Arial, sans-serif; color: #333;">
       <h2 style="color: #2e6c80;">You're enrolled in a new training!</h2>
-      <p>Hi ${name},</p>
+      <p>Hello ${name},</p>
       <p>Here are your training details:</p>
       <ul>
         <li><strong>Title:</strong> ${title}</li>

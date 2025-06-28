@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { updatePhoneNumber, updatePassword, getUsers, getUser, getCurrentUser, getEnrolledTrainingsOfUser, searchEmployees } from '../controllers/user.controller';
+import { updatePhoneNumber, updatePassword, getUsers, getUser, getCurrentUser, getEnrolledTrainingsOfUser, searchEmployees, updateUser, deleteUser } from '../controllers/user.controller';
 import { verifyToken, restrictToRoles } from '../middlewares/auth.middleware';
 const router = Router();
 
@@ -47,6 +47,20 @@ router.patch(
     verifyToken,
     restrictToRoles('EMPLOYEE', 'HR_ADMIN'),
     updatePassword
+);
+
+router.patch(
+    '/:id',
+    verifyToken,
+    restrictToRoles('ADMIN'),
+    updateUser
+);
+
+router.delete(
+    '/:id',
+    verifyToken,
+    restrictToRoles('ADMIN'),
+    deleteUser
 );
 
 // router.get(

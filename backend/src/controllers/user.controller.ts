@@ -215,3 +215,138 @@ export const getEnrolledTrainingsOfUser = async (req: AuthRequest, res: Response
   }
 };
 
+export const updateUser = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  const { name, employeeid, email, department, phonenumber } = req.body;
+
+  if (!id) {
+    res.status(400).json({ error: "User ID is required" });
+    return;
+  }
+
+  // Validate required fields
+  if (!name || !employeeid || !email || !department) {
+    res.status(400).json({ error: "Name, employee ID, email, and department are required" });
+    return;
+  }
+
+  try {
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!existingUser) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    // Check if employeeid is already taken by another user
+    const duplicateEmployeeId = await prisma.user.findFirst({
+      where: {
+        employeeid,
+        id: { not: id },
+      },
+    });
+
+    if (duplicateEmployeeId) {
+      res.status(400).json({ error: "Employee ID already exists" });
+      return;
+    }
+
+    // Check if email is already taken by another user
+    const duplicateEmail = await prisma.user.findFirst({
+      where: {
+        email,
+        id: { not: id },
+      },
+    });
+
+    if (duplicateEmail) {
+      res.status(400).json({ error: "Email already exists" });
+      return;
+    }
+
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        name,
+        employeeid,
+        email,
+        department,
+        phonenumber: phonenumber || null,
+      },
+      select: {
+        id: true,
+        name: true,
+        employeeid: true,
+        email: true,
+        department: true,
+        phonenumber: true,
+        role: true,
+      },
+    });
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const deleteUser = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  if (!id) {
+    res.status(400).json({ error: "User ID is required" });
+    return;
+  }
+
+  try {
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!existingUser) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    // Check if user has any training enrollments
+    const enrollments = await prisma.trainingEnrollment.findMany({
+      where: { employeeId: id },
+    });
+
+    if (enrollments.length > 0) {
+      res.status(400).json({ 
+        error: "Cannot delete user with existing training enrollments. Please remove enrollments first." 
+      });
+      return;
+    }
+
+    // Check if user has any training feedbacks
+    const feedbacks = await prisma.trainingFeedback.findMany({
+      where: { employeeId: id },
+    });
+
+    if (feedbacks.length > 0) {
+      res.status(400).json({ 
+        error: "Cannot delete user with existing training feedbacks. Please remove feedbacks first." 
+      });
+      return;
+    }
+
+    // Delete user
+    await prisma.user.delete({
+      where: { id },
+    });
+
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
