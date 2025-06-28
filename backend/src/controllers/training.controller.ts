@@ -431,3 +431,51 @@ export const submitTrainingFeedback = async (req: AuthRequest, res: Response): P
         return
     }
 }
+
+export const getTrainingFeedbacks = async (req: AuthRequest, res: Response): Promise<void> => {
+    const { trainingId } = req.params;
+
+    if (!trainingId) {
+        res.status(400).json({ error: "Training ID is required" });
+        return;
+    }
+
+    try {
+        const feedbacks = await prisma.trainingFeedback.findMany({
+            where: { trainingId },
+            select: {
+                id: true,
+                participantName: true,
+                department: true,
+                modeOfAttendance: true,
+                submittedAt: true,
+                durationRating: true,
+                paceRating: true,
+                contentRating: true,
+                relevanceRating: true,
+                usefulnessRating: true,
+                confidenceRating: true,
+                trainerKnowledgeRating: true,
+                trainerExplanationRating: true,
+                trainerAnswersRating: true,
+                trainerUtilityRating: true,
+                trainerInformationRating: true,
+                trainingLikes: true,
+                trainingImprovements: true,
+                trainerStrengths: true,
+                trainerRecommendations: true
+            },
+            orderBy: {
+                submittedAt: 'desc'
+            }
+        });
+
+        res.json({
+            feedbacks
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to fetch training feedbacks" });
+    }
+};

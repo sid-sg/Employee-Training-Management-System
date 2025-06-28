@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Users2, Mail, Phone, Search, X, Check, UserPlus } from "lucide-react";
+import { Users2, Mail, Phone, Search, X, Check, UserPlus, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import axios from "axios";
 import { toast } from "sonner";
+import FeedbacksCard from "./FeedbacksCard";
 
 interface Employee {
     id: string;
@@ -22,11 +23,13 @@ interface Employee {
 export default function EnrolledEmployeesCard({
     enrolledUsers,
     trainingId,
-    refreshData
+    refreshData,
+    trainingTitle
 }: {
     enrolledUsers: Employee[],
     trainingId: string,
-    refreshData: () => void
+    refreshData: () => void,
+    trainingTitle: string
 }) {
     const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
     const [selectAllChecked, setSelectAllChecked] = useState(false);
@@ -238,7 +241,7 @@ export default function EnrolledEmployeesCard({
 
             <CardContent>
                 <Tabs defaultValue="enrolled" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="enrolled" className="flex items-center gap-2">
                             <Users2 className="h-4 w-4" />
                             Enrolled ({enrolledUsers.length})
@@ -246,6 +249,10 @@ export default function EnrolledEmployeesCard({
                         <TabsTrigger value="enroll" className="flex items-center gap-2">
                             <UserPlus className="h-4 w-4" />
                             Enroll New
+                        </TabsTrigger>
+                        <TabsTrigger value="feedbacks" className="flex items-center gap-2">
+                            <MessageSquare className="h-4 w-4" />
+                            Feedbacks
                         </TabsTrigger>
                     </TabsList>
 
@@ -412,6 +419,10 @@ export default function EnrolledEmployeesCard({
                                 {isEnrolling ? "Enrolling..." : `Enroll Employees (${selectedEmployees.length})`}
                             </Button>
                         </div>
+                    </TabsContent>
+
+                    <TabsContent value="feedbacks" className="space-y-6 mt-6">
+                        <FeedbacksCard trainingId={trainingId} trainingTitle={trainingTitle} />
                     </TabsContent>
                 </Tabs>
             </CardContent>

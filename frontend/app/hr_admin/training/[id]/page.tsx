@@ -202,6 +202,7 @@ export default function TrainingDetailPage() {
                     enrolledUsers={enrolledUsers}
                     trainingId={id}
                     refreshData={fetchEnrolledUsers}
+                    trainingTitle={training.title}
                 />
             </div>
         </div>
