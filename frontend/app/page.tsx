@@ -2,7 +2,7 @@
 
 import type React from "react"
 import axios from "axios"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,7 +17,54 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const router = useRouter()
+
+  // Check for existing authentication on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem("token")
+      const userRole = localStorage.getItem("userRole")
+
+      if (token && userRole) {
+        try {
+          // Verify token is still valid by making a request to a protected endpoint
+          await axios.get("http://localhost:3000/api/auth/verify", {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+
+          // Token is valid, redirect based on role
+          switch (userRole) {
+            case "ADMIN":
+              router.push("/admin/dashboard")
+              break
+            case "HR_ADMIN":
+              router.push("/hr_admin/dashboard")
+              break
+            case "EMPLOYEE":
+              router.push("/employee/dashboard")
+              break
+            default:
+              // Invalid role, clear storage and show login
+              localStorage.removeItem("token")
+              localStorage.removeItem("userEmail")
+              localStorage.removeItem("userRole")
+              setIsCheckingAuth(false)
+          }
+        } catch (error) {
+          // Token is invalid, clear storage and show login
+          localStorage.removeItem("token")
+          localStorage.removeItem("userEmail")
+          localStorage.removeItem("userRole")
+          setIsCheckingAuth(false)
+        }
+      } else {
+        setIsCheckingAuth(false)
+      }
+    }
+
+    checkAuth()
+  }, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,7 +78,6 @@ export default function LoginPage() {
       }, {
         headers: { "Content-Type": "application/json" }
       })
-
 
       const data = response.data
 
@@ -57,6 +103,17 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        </div>
+      </div>
+    )
   }
 
   return (

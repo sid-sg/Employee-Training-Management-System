@@ -1,5 +1,5 @@
 import express from 'express';
-import { login } from '../controllers/auth.controller';
+import { login, verify } from '../controllers/auth.controller';
 
 const router = express.Router();
 
@@ -14,5 +14,21 @@ const router = express.Router();
  *         description: User logged in successfully
  */
 router.post('/login', login);
+
+/**
+ * @swagger
+ * /auth/verify:
+ *   get:
+ *     summary: Verify JWT token
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Token is valid
+ *       401:
+ *         description: Invalid token
+ */
+router.get('/verify', verify);
 
 export default router;
