@@ -5,15 +5,19 @@ import { Button } from "@/components/ui/button"
 import { Edit, Calendar, MapPin, Globe } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { Star } from "lucide-react"
 
 interface Training {
-    id: string
-    title: string
-    mode: "ONLINE" | "OFFLINE"
-    startDate: string
-    endDate: string
-    location?: string
-    platform?: string
+    id: string;
+    title: string;
+    mode: "ONLINE" | "OFFLINE";
+    description?: string;
+    startDate: string;
+    endDate: string;
+    location?: string;
+    platform?: string;
+    totalRating?: number;
+    totalParticipants?: number;
 }
 
 
@@ -57,6 +61,14 @@ const TrainingCard = ({ training }: { training: Training }) => {
                             <span>{training.platform}</span>
                         </div>
                     )}
+                    {typeof training.totalRating === "number" && training.totalRating > 0 && (training.totalParticipants ?? 0) > 0 && (
+                        <div className="flex items-center gap-2 text-sm mt-2 text-yellow-600 font-medium">
+                            <Star className="h-4 w-4 fill-yellow-400 stroke-yellow-600" />
+                            <span>{training.totalRating.toFixed(1)} / 5</span>
+                            <span className="text-muted-foreground text-xs">({training.totalParticipants} participants)</span>
+                        </div>
+                    )}
+
                 </div>
             </CardContent>
         </Card>

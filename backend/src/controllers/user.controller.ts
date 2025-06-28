@@ -1,19 +1,16 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma/client';
 import bcrypt from 'bcrypt';
-// import { Prisma } from '@prisma/client';
 
 interface AuthRequest extends Request {
   user?: { userId: string };
 }
-
 
 enum Role {
   EMPLOYEE,
   HR_ADMIN,
   ADMIN,
 }
-
 
 export const getUser = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
@@ -28,6 +25,7 @@ export const getUser = async (req: AuthRequest, res: Response) => {
       where: { id },
       select: {
         name: true,
+        employeeid: true,
         email: true,
         phonenumber: true,
         department: true,
@@ -60,7 +58,8 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
       where: { id: userId },
       select: {
         id: true,
-        name: true,
+         employeeid: true,
+       name: true,
         email: true,
         phonenumber: true,
         role: true,
@@ -83,34 +82,36 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
 };
 
 export const searchEmployees = async (req: AuthRequest, res: Response) => {
-    const query = req.query.q as string;
+  const query = req.query.q as string;
 
-    try {
-        const users = await prisma.user.findMany({
-            where: {
-                role: "EMPLOYEE",
-                OR: [
-                    { name: { contains: query, mode: "insensitive" } },
-                    { email: { contains: query, mode: "insensitive" } },
-                    { department: { contains: query, mode: "insensitive" } },
-                ],
-            },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                department: true,
-            },
-            orderBy: {
-                name: "asc",
-            },
-        });
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        role: "EMPLOYEE",
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { employeeid: { contains: query, mode: "insensitive" } },
+          { email: { contains: query, mode: "insensitive" } },
+          { department: { contains: query, mode: "insensitive" } },
+        ],
+      },
+      select: {
+        id: true,
+          employeeid: true,
+      name: true,
+        email: true,
+        department: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
 
-        res.status(200).json({ users });
-    } catch (error) {
-        console.error("Error searching users:", error);
-        res.status(500).json({ error: "Internal server error" });
-    }
+    res.status(200).json({ users });
+  } catch (error) {
+    console.error("Error searching users:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 
@@ -191,28 +192,6 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
   }
 };
 
-
-// export const getEnrolledTrainingsOfUser = async (req: AuthRequest, res: Response): Promise<void> => {
-// 	  const { userId } = req.params;
-
-//   try {
-// 		const trainings = await prisma.trainingEnrollment.findMany({
-// 			where: {
-// 				employeeId: userId,
-// 			},
-// 			include: {
-// 				training: true,
-// 			},
-// 		});
-
-// 		const result = trainings.map((enrollment) => enrollment.training);
-
-// 		res.status(200).json({ trainings: result });
-// 	} catch (error) {
-// 		console.error('Error fetching enrolled trainings:', error);
-// 		res.status(500).json({ error: 'Internal server error' });
-// 	}
-// };
 
 export const getEnrolledTrainingsOfUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {

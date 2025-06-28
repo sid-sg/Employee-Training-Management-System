@@ -11,12 +11,15 @@ interface Training {
   id: string;
   title: string;
   mode: "ONLINE" | "OFFLINE";
-  description: string;
+  description?: string;
   startDate: string;
   endDate: string;
   location?: string;
-  rating?: number;
+  platform?: string;
+  totalRating?: number;
+  totalParticipants?: number;
 }
+
 
 export default function EmployeeDashboard() {
   const [trainings, setTrainings] = useState<Training[]>([]);
@@ -37,7 +40,7 @@ export default function EmployeeDashboard() {
 
       const res = await axios.get(`http://localhost:3000/api/user/enrolled-trainings`, {
         headers: { Authorization: `Bearer ${token}` },
-      });
+      }); 
 
       setTrainings(res.data.trainings);
     } catch (error) {

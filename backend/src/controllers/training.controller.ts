@@ -131,7 +131,8 @@ export const getAllTrainings = async (req: AuthRequest, res: Response): Promise<
                 platform: true,
                 startDate: true,
                 endDate: true,
-                createdAt: true,
+                totalRating: true,
+                totalParticipants: true,
             },
 
             orderBy: {
@@ -372,7 +373,7 @@ export const submitTrainingFeedback = async (req: AuthRequest, res: Response): P
             where: { id: trainingId },
             data: {
                 totalParticipants: participantCount + 1,
-                totalRating: updatedRating,
+                totalRating: parseFloat(updatedRating.toFixed(2)),
             },
         })
 

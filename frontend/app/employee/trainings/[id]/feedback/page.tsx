@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ArrowLeft, Send } from "lucide-react"
 import Navbar from "@/components/navbar"
 import axios from "axios"
+import { toast } from "sonner"
 
 export default function TrainingFeedbackPage() {
     const params = useParams()
@@ -103,6 +104,27 @@ export default function TrainingFeedbackPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
+        const allRatings = [
+            trainingFeedback.duration,
+            trainingFeedback.pace,
+            trainingFeedback.content,
+            trainingFeedback.relevance,
+            trainingFeedback.usefulness,
+            trainingFeedback.confidence,
+            trainerFeedback.knowledge,
+            trainerFeedback.explanation,
+            trainerFeedback.answers,
+            trainerFeedback.utility,
+            trainerFeedback.information
+        ]
+
+        const allFieldsFilled = allRatings.every(rating => rating !== "")
+
+        if (!allFieldsFilled) {
+            toast.error("Please provide ratings for all required questions.")
+            return
+        }
+
         const feedbackData = {
             trainingId,
             userInfo,
@@ -119,14 +141,14 @@ export default function TrainingFeedbackPage() {
                 },
             })
 
-
-            alert("Feedback submitted successfully!")
+            toast.success("Your feedback has been submitted successfully.")
             router.push(`/employee/trainings/${trainingId}`)
         } catch (error) {
             console.error("Error submitting feedback:", error)
-            alert("Error submitting feedback. Please try again.")
+            toast.error("Error submitting feedback. Please try again.")
         }
     }
+
 
     const handleGoBack = () => {
         router.push(`/employee/trainings/${trainingId}`)

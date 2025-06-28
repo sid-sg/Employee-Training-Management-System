@@ -15,21 +15,22 @@ datasource db {
 }
 
 model User {
-  id               String     @id @default(uuid())
+  id               String               @id @default(uuid())
   name             String
-  email            String     @unique
+  employeeid       String               @unique
+  email            String               @unique
   phonenumber      String?
   password         String
-  role             Role       @default(EMPLOYEE)
+  role             Role                 @default(EMPLOYEE)
   department       String
-  createdAt        DateTime   @default(now())
-  createdTrainings Training[] @relation("CreatedTrainings")
-  enrollments TrainingEnrollment[]
-  feedbacks   TrainingFeedback[]   @relation("EmployeeFeedbacks")
+  createdAt        DateTime             @default(now())
+  createdTrainings Training[]           @relation("CreatedTrainings")
+  enrollments      TrainingEnrollment[]
+  feedbacks        TrainingFeedback[]   @relation("EmployeeFeedbacks")
 }
 
 model Training {
-  id                String       @id @default(uuid())
+  id                String               @id @default(uuid())
   title             String
   description       String
   mode              TrainingMode
@@ -39,14 +40,14 @@ model Training {
   longitude         Float? // for google maps 
   startDate         DateTime
   endDate           DateTime
-  totalRating       Float?       @default(0)
-  totalParticipants Int?         @default(0)
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  createdBy         User         @relation("CreatedTrainings", fields: [createdById], references: [id])
+  totalRating       Float?               @default(0)
+  totalParticipants Int?                 @default(0)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  createdBy         User                 @relation("CreatedTrainings", fields: [createdById], references: [id])
   createdById       String
-  enrollments TrainingEnrollment[]
-  feedbacks   TrainingFeedback[]   @relation("TrainingFeedbacks")
+  enrollments       TrainingEnrollment[]
+  feedbacks         TrainingFeedback[]   @relation("TrainingFeedbacks")
 }
 
 model TrainingEnrollment {

@@ -24,9 +24,9 @@ const handleCSVUpload = async (req: Request, res: Response, role: 'EMPLOYEE' | '
         .on('data', (data) => results.push(data))
         .on('end', async () => {
             for (const row of results) {
-                const { name, email, phonenumber, department } = row;
+                const { name, employeeid, email, phonenumber, department } = row;
 
-                if (!name || !email || !department) {
+                if (!name || !employeeid || !email || !department) {
                     console.error('Missing required fields in CSV row:', row);
                     continue;
                 }
@@ -43,6 +43,7 @@ const handleCSVUpload = async (req: Request, res: Response, role: 'EMPLOYEE' | '
                 await prisma.user.create({
                     data: {
                         name,
+                        employeeid,
                         email,
                         phonenumber,
                         department,
@@ -51,10 +52,9 @@ const handleCSVUpload = async (req: Request, res: Response, role: 'EMPLOYEE' | '
                     },
                 });
 
-                console.log(`Created user ${email} with password: ${password}`);
                 createdUsers.push({ email, password });
             }
-            
+
             if (!req.file) {
                 return res.status(400).json({ error: 'CSV file required or invalid file type/size exceeded' });
             }

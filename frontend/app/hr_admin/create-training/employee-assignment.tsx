@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 export interface Employee {
     id: string
     name: string
+    employeeid: string
     email: string
     department: string
 }
@@ -108,8 +109,9 @@ export function EmployeeAssignment({
                                         <div className="flex items-center justify-between">
                                             <div className="space-y-1">
                                                 <p className="font-medium">{employee.name}</p>
-                                                <p className="text-sm text-muted-foreground">{employee.email}</p>
+                                                <p className="text-sm text-muted-foreground">{employee.employeeid}</p>
                                                 <div className="flex gap-2">
+                                                <p className="text-sm text-muted-foreground">{employee.email}</p>
                                                     <Badge variant="outline" className="text-xs">
                                                         {employee.department}
                                                     </Badge>

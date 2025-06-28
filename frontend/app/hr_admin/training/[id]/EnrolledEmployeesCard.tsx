@@ -28,7 +28,6 @@ export default function EnrolledEmployeesCard({ enrolledUsers, trainingId, refre
     };
 
     const handleDeenroll = async () => {
-        console.log("De-enrolling users:", selectedUsers);
         
         if (selectedUsers.length === 0) {
             toast.error("No employees selected for de-enrollment");

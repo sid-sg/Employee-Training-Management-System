@@ -13,6 +13,8 @@ interface Training {
     startDate: string
     endDate: string
     location?: string
+    totalRating?: number;
+    totalParticipants?: number;
 }
 
 export default function TrainingsPage() {
@@ -25,8 +27,6 @@ export default function TrainingsPage() {
                 const res = await axios.get("http://localhost:3000/api/training", {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-
-                console.log(res.data);
 
                 setTrainings(res.data.trainings);
             } catch (error) {

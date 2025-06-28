@@ -23,6 +23,8 @@ interface Training {
   startDate: string
   endDate: string
   location?: string
+  totalRating?: number;
+  totalParticipants?: number;
 }
 
 interface Employee {
@@ -198,7 +200,7 @@ export default function HRAdminDashboard() {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">Training Management System</h2>
               <Button asChild>
-                <Link href="/hr_admin/create-training"  rel="noopener noreferrer">
+                <Link href="/hr_admin/create-training" rel="noopener noreferrer">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Training
                 </Link>

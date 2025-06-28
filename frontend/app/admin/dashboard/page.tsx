@@ -70,10 +70,6 @@ export default function SuperAdminDashboard() {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.clear()
-    router.push("/")
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,7 +109,7 @@ export default function SuperAdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Upload Employee Data</CardTitle>
-                <CardDescription>CSV with name, email, department, phone required</CardDescription>
+                <CardDescription>CSV with name, employeeid, email, department, phone required</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -136,7 +132,7 @@ export default function SuperAdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Upload HR Admin Data</CardTitle>
-                <CardDescription>CSV with name, email, department, phone required</CardDescription>
+                <CardDescription>CSV with name, employeeid, email, department, phone required</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Edit, Calendar, MapPin, Globe } from "lucide-react"
+import { Edit, Calendar, MapPin, Globe, Star } from "lucide-react"
 import Link from "next/link"
 import { TrainingDeleteAlert } from "./TrainingDeleteAlert"
 import { useRouter } from "next/navigation"
@@ -14,6 +14,8 @@ interface Training {
     endDate: string
     location?: string
     platform?: string
+    totalRating?: number;
+    totalParticipants?: number;
 }
 
 
@@ -37,7 +39,7 @@ const TrainingCard = ({ training, onDelete }: { training: Training, onDelete: (i
                     </div>
                     <div className="flex gap-2">
                         <Button variant="outline" size="sm" asChild onClick={(e) => e.stopPropagation()}>
-                            <Link href={`/hr_admin/edit-training/${training.id}`}  rel="noopener noreferrer">
+                            <Link href={`/hr_admin/edit-training/${training.id}`} rel="noopener noreferrer">
                                 <Edit className="h-4 w-4" />
                             </Link>
                         </Button>
@@ -70,6 +72,14 @@ const TrainingCard = ({ training, onDelete }: { training: Training, onDelete: (i
                             <span>{training.platform}</span>
                         </div>
                     )}
+                    {typeof training.totalRating === "number" && training.totalRating > 0 && (training.totalParticipants ?? 0) > 0 && (
+                        <div className="flex items-center gap-2 text-sm mt-2 text-yellow-600 font-medium">
+                            <Star className="h-4 w-4 fill-yellow-400 stroke-yellow-600" />
+                            <span>{training.totalRating.toFixed(1)} / 5</span>
+                            <span className="text-muted-foreground text-xs">({training.totalParticipants} participants)</span>
+                        </div>
+                    )}
+
                 </div>
             </CardContent>
         </Card>
