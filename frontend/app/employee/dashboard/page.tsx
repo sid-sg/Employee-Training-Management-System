@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "@/utils/axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Navbar from "@/components/navbar";
@@ -23,23 +23,39 @@ interface Training {
 
 export default function EmployeeDashboard() {
   const [trainings, setTrainings] = useState<Training[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const userType = localStorage.getItem("userRole");
-    if (userType !== "EMPLOYEE") {
-      router.push("/");
-    } else {
-      fetchTrainings();
+    const checkAuthAndFetchData = async () => {
+      try {
+        // Check authentication
+        const authRes = await axios.get("http://localhost:3000/api/auth/verify", {
+          withCredentials: true
+        })
+        
+        if (authRes.data.user.role !== "EMPLOYEE") {
+          router.push("/")
+          return
+        }
+
+        // Fetch trainings
+        await fetchTrainings()
+      } catch (error) {
+        console.error("Error:", error)
+        router.push("/")
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }, []);
+
+    checkAuthAndFetchData()
+  }, [router]);
 
   const fetchTrainings = async () => {
     try {
-      const token = localStorage.getItem("token");
-
       const res = await axios.get(`http://localhost:3000/api/user/enrolled-trainings`, {
-        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
       }); 
 
       setTrainings(res.data.trainings);
@@ -49,10 +65,16 @@ export default function EmployeeDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.clear();
-    router.push("/");
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-muted">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">

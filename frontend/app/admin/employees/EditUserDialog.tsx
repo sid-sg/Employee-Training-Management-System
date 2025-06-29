@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
-import axios from "axios"
+import axios from "@/utils/axios"
 
 interface User {
     id: string
@@ -68,10 +68,7 @@ export function EditUserDialog({ user, isOpen, onClose, onUpdate }: EditUserDial
         try {
             const token = localStorage.getItem("token")
             const res = await axios.patch(`http://localhost:3000/api/user/${user.id}`, formData, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                }
+                withCredentials: true,
             })
 
             if (res.status === 200) {

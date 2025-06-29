@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Star, MessageSquare, Calendar, User, Building } from "lucide-react";
-import axios from "axios";
+import axios from "@/utils/axios";
 import { toast } from "sonner";
 
 interface TrainingFeedback {
@@ -52,14 +52,8 @@ export default function FeedbacksCard({ trainingId, trainingTitle }: FeedbacksCa
     const fetchFeedbacks = async () => {
         setIsLoading(true);
         try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                toast.error("Authentication token not found");
-                return;
-            }
-
             const response = await axios.get(`http://localhost:3000/api/training/${trainingId}/feedbacks`, {
-                headers: { Authorization: `Bearer ${token}` }
+                withCredentials: true
             });
 
             const feedbacksData = response.data.feedbacks || [];

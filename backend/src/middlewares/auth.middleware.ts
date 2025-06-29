@@ -9,13 +9,13 @@ export interface AuthRequest extends Request {
 }
 
 export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) : void => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'Missing or malformed token' });
+  const token = req.cookies?.token;
+  
+  if (!token) {
+    res.status(401).json({ error: 'Missing token' });
     return;
   }
 
-  const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
       userId: string;

@@ -1,7 +1,7 @@
 "use client"
 
-import axios from "axios"
-import { useParams } from "next/navigation"
+import axios from "@/utils/axios"
+import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -30,6 +30,7 @@ interface Training {
 
 export default function TrainingDetailPage() {
     const params = useParams()
+    const router = useRouter()
     const id = params.id as string
 
     const [training, setTraining] = useState<Training>({
@@ -44,20 +45,41 @@ export default function TrainingDetailPage() {
 
     const [enrolledUsers, setEnrolledUsers] = useState<User[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [isAuthLoading, setIsAuthLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+
+    useEffect(() => {
+        const checkAuthAndFetchData = async () => {
+            try {
+                // Check authentication
+                const authRes = await axios.get("http://localhost:3000/api/auth/verify", {
+                    withCredentials: true
+                })
+                
+                if (authRes.data.user.role !== "HR_ADMIN") {
+                    router.push("/")
+                    return
+                }
+
+                // Fetch all data
+                await fetchAllData()
+            } catch (error) {
+                console.error("Error:", error);
+                router.push("/");
+            } finally {
+                setIsAuthLoading(false);
+            }
+        };
+
+        if (id) {
+            checkAuthAndFetchData();
+        }
+    }, [id, router]);
 
     const fetchTrainingDetails = async () => {
         try {
-            const token = localStorage.getItem("token")
-            if (!token) {
-                setError("No authentication token found")
-                return
-            }
-
             const response = await axios.get(`http://localhost:3000/api/training/${id}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                withCredentials: true
             })
 
             const trainingData = response.data.training[0]
@@ -84,16 +106,8 @@ export default function TrainingDetailPage() {
 
     const fetchEnrolledUsers = async () => {
         try {
-            const token = localStorage.getItem("token")
-            if (!token) {
-                setError("No authentication token found")
-                return
-            }
-
             const response = await axios.get(`http://localhost:3000/api/training/${id}/enrolled-users`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                withCredentials: true
             })
 
             setEnrolledUsers(response.data.users || [])
@@ -115,11 +129,16 @@ export default function TrainingDetailPage() {
         setIsLoading(false)
     }
 
-    useEffect(() => {
-        if (id) {
-            fetchAllData()
-        }
-    }, [id])
+    if (isAuthLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-muted">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p>Loading...</p>
+                </div>
+            </div>
+        )
+    }
 
     if (isLoading) {
         return (

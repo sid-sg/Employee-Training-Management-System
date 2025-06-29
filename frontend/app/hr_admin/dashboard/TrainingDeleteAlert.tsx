@@ -13,6 +13,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
+import axios from "@/utils/axios"
 
 export function TrainingDeleteAlert({ training, onDelete }: { training: any, onDelete: (id: string) => void }) {
   const [loading, setLoading] = useState(false)
@@ -20,15 +21,10 @@ export function TrainingDeleteAlert({ training, onDelete }: { training: any, onD
   const handleConfirmDelete = async () => {
     setLoading(true)
     try {
-      const token = localStorage.getItem("token")
-      const res = await fetch(`http://localhost:3000/api/training/${training.id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await axios.delete(`http://localhost:3000/api/training/${training.id}`, {
+        withCredentials: true
       })
-      if (!res.ok) throw new Error("Failed to delete")
-
+      
       onDelete(training.id)
       toast.success(`Deleted "${training.title}"`)
     } catch (err) {

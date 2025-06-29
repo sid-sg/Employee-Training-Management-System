@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import axios from "axios"
+import axios from "@/utils/axios"
 import { Calendar, Users } from "lucide-react"
 import Navbar from "@/components/navbar"
 import { EnhancedStepper } from "./enhanced-stepper"
@@ -24,6 +24,7 @@ export default function CreateTrainingPage() {
     const [currentStep, setCurrentStep] = useState(0)
     const [createdTrainingId, setCreatedTrainingId] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(false)
+    const [isAuthLoading, setIsAuthLoading] = useState(true)
     const [employees, setEmployees] = useState<Employee[]>([])
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedEmployees, setSelectedEmployees] = useState<Employee[]>([])
@@ -54,24 +55,38 @@ export default function CreateTrainingPage() {
     ]
 
     useEffect(() => {
-        const userType = localStorage.getItem("userRole")
-        if (userType !== "HR_ADMIN") {
-            router.push("/")
+        const checkAuth = async () => {
+            try {
+                const authRes = await axios.get("http://localhost:3000/api/auth/verify", {
+                    withCredentials: true
+                })
+                
+                if (authRes.data.user.role !== "HR_ADMIN") {
+                    router.push("/")
+                    return
+                }
+            } catch (error) {
+                console.error("Auth error:", error)
+                router.push("/")
+            } finally {
+                setIsAuthLoading(false)
+            }
         }
+
+        checkAuth()
     }, [router])
 
     const handleCreateTraining = async () => {
         setIsLoading(true)
-        const token = localStorage.getItem("token")
 
         try {
             const response = await axios.post(
                 "http://localhost:3000/api/training",
                 form,
                 {
+                    withCredentials: true,
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
                     },
                 }
             )
@@ -94,16 +109,15 @@ export default function CreateTrainingPage() {
         }
 
         setIsLoading(true)
-        const token = localStorage.getItem("token")
 
         try {
             await axios.post(
                 `http://localhost:3000/api/training/${createdTrainingId}/enroll`,
                 { userIds: selectedEmployees.map((emp) => emp.id) },
                 {
+                    withCredentials: true,
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
                     },
                 }
             )
@@ -129,14 +143,12 @@ export default function CreateTrainingPage() {
     }
 
     useEffect(() => {
-        const token = localStorage.getItem("token")
-        if (!token || searchQuery.trim() === "") return;
-
+        if (searchQuery.trim() === "") return;
 
         const fetchEmployees = async () => {
             try {
                 const res = await axios.get("http://localhost:3000/api/user/search", {
-                    headers: { Authorization: `Bearer ${token}` },
+                    withCredentials: true,
                     params: { q: searchQuery },
                 })
                 setEmployees(res.data.users)
@@ -148,6 +160,17 @@ export default function CreateTrainingPage() {
         const delay = setTimeout(fetchEmployees, 300)
         return () => clearTimeout(delay)
     }, [searchQuery])
+
+    if (isAuthLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-muted">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p>Loading...</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen bg-background">

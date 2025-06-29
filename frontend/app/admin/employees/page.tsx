@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "@/utils/axios";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,7 @@ export default function EmployeesPage() {
             setIsLoading(true);
             const token = localStorage.getItem("token");
             const res = await axios.get("http://localhost:3000/api/user/users?role=EMPLOYEE", {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: { withCredentials: true },
             });
             setEmployees(res.data);
         } catch (error) {

@@ -9,6 +9,7 @@ import { Plus, Calendar, Clock } from "lucide-react"
 import Link from "next/link"
 import TrainingCard from "./ TrainingCard"
 import Navbar from "@/components/navbar"
+import axios from "@/utils/axios"
 
 interface Training {
   id: string
@@ -23,33 +24,37 @@ interface Training {
 
 export default function HRAdminDashboard() {
   const [trainings, setTrainings] = useState<Training[]>()
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    const userType = localStorage.getItem("userRole")
-    if (userType !== "HR_ADMIN") {
-      router.push("/")
-      return
-    }
-
-    const fetchTrainings = async () => {
+    const checkAuthAndFetchData = async () => {
       try {
-        const token = localStorage.getItem("token")
-        const res = await fetch("http://localhost:3000/api/training", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        // Check authentication
+        const authRes = await axios.get("http://localhost:3000/api/auth/verify", {
+          withCredentials: true
         })
+        
+        if (authRes.data.user.role !== "HR_ADMIN") {
+          router.push("/")
+          return
+        }
 
-        if (!res.ok) throw new Error("Failed to fetch trainings")
-        const data = await res.json()
-        setTrainings(data.trainings)
+        // Fetch trainings
+        const trainingsRes = await axios.get("http://localhost:3000/api/training", {
+          withCredentials: true
+        })
+        
+        setTrainings(trainingsRes.data.trainings)
       } catch (error) {
-        console.error("Error fetching trainings:", error)
+        console.error("Error:", error)
+        router.push("/")
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    fetchTrainings()
+    checkAuthAndFetchData()
   }, [router])
 
   // Filter trainings based on current date
@@ -71,6 +76,17 @@ export default function HRAdminDashboard() {
 
     return { activeTrainings: active, pastTrainings: past }
   }, [trainings])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-muted">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">

@@ -4,13 +4,21 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { User, LogOut } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
+import axios from "@/utils/axios";
 
 export default function Navbar({ role }: { role: "HR_ADMIN" | "EMPLOYEE" | "ADMIN" }) {
     const router = useRouter();
 
-    const handleLogout = () => {
-        localStorage.clear()
-        router.push("/")
+    const handleLogout = async () => {
+        try {
+            await axios.post("http://localhost:3000/api/auth/logout", {}, {
+                withCredentials: true
+            });
+        } catch (error) {
+            console.error("Logout error:", error);
+        } finally {
+            router.push("/");
+        }
     };
 
     return (

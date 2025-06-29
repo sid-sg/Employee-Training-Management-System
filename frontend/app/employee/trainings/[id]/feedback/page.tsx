@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ArrowLeft, Send } from "lucide-react"
 import Navbar from "@/components/navbar"
-import axios from "axios"
+import axios from "@/utils/axios"
 import { toast } from "sonner"
 
 export default function TrainingFeedbackPage() {
@@ -53,25 +53,22 @@ export default function TrainingFeedbackPage() {
         mode: ""
     })
 
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
-
     useEffect(() => {
-        const role = localStorage.getItem("userRole");
-        if (role !== "EMPLOYEE") {
-            router.push("/");
-            return;
-        }
-        if (!token) return;
-
-        // Fetch user info and training details
-        const fetchData = async () => {
+        const checkAuthAndFetchData = async () => {
             try {
+                // Check authentication
+                const authRes = await axios.get("http://localhost:3000/api/auth/verify", {
+                    withCredentials: true
+                })
+                
+                if (authRes.data.user.role !== "EMPLOYEE") {
+                    router.push("/")
+                    return
+                }
+
                 // Fetch user profile
                 const userRes = await axios.get("http://localhost:3000/api/user/me", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    withCredentials: true,
                 })
 
                 setUserInfo({
@@ -82,9 +79,7 @@ export default function TrainingFeedbackPage() {
 
                 // Fetch training details
                 const trainingRes = await axios.get(`http://localhost:3000/api/training/${trainingId}`, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    withCredentials: true,
                 })
                 const trainingData = trainingRes.data.training[0]
                 setTraining({
@@ -92,14 +87,15 @@ export default function TrainingFeedbackPage() {
                     mode: trainingData.mode || ""
                 })
             } catch (error) {
-                console.error("Error fetching data:", error)
+                console.error("Error:", error)
+                router.push("/")
             }
         }
 
         if (trainingId) {
-            fetchData()
+            checkAuthAndFetchData()
         }
-    }, [trainingId])
+    }, [trainingId, router])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -136,9 +132,7 @@ export default function TrainingFeedbackPage() {
 
         try {
             await axios.post(`http://localhost:3000/api/training/${trainingId}/feedback`, feedbackData, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+                withCredentials: true,
             })
 
             toast.success("Your feedback has been submitted successfully.")

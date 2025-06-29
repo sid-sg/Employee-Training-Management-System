@@ -1,6 +1,6 @@
 "use client"
 
-import axios from "axios"
+import axios from "@/utils/axios"
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -36,9 +36,7 @@ export default function TrainingDetailPage() {
             // Fetch Training Details
             axios
                 .get(`http://localhost:3000/api/training/${id}`, {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
+                    withCredentials: true,
                 })
                 .then((res) => {
                     const trainingData = res.data.training[0]

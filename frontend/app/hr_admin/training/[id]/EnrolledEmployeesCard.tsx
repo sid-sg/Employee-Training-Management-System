@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import axios from "axios";
+import axios from "@/utils/axios";
 import { toast } from "sonner";
 import FeedbacksCard from "./FeedbacksCard";
 
@@ -82,14 +82,8 @@ export default function EnrolledEmployeesCard({
 
         setIsLoadingEmployees(true);
         try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                toast.error("Authentication token not found");
-                return;
-            }
-
             const response = await axios.get("http://localhost:3000/api/user/search", {
-                headers: { Authorization: `Bearer ${token}` },
+                withCredentials: true,
                 params: { q: query },
             });
 
@@ -141,16 +135,10 @@ export default function EnrolledEmployeesCard({
 
         setIsEnrolling(true);
         try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                toast.error("Authentication token not found");
-                return;
-            }
-
             await axios.post(`http://localhost:3000/api/training/${trainingId}/enroll`, {
                 userIds: selectedEmployees.map(emp => emp.id)
             }, {
-                headers: { Authorization: `Bearer ${token}` }
+                withCredentials: true
             });
 
             toast.success(`${selectedEmployees.length} employee(s) enrolled successfully!`);
@@ -195,16 +183,10 @@ export default function EnrolledEmployeesCard({
 
         setIsDeenrolling(true);
         try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                toast.error("Authentication token not found");
-                return;
-            }
-
-            await axios.post(`http://localhost:3000/api/training/${trainingId}/deenroll`,
-                { userIds: selectedUsers },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await axios.delete(`http://localhost:3000/api/training/${trainingId}/unenroll`, {
+                withCredentials: true,
+                data: { userIds: selectedUsers }
+            });
 
             toast.success(`${selectedUsers.length} employee(s) de-enrolled successfully!`);
             setSelectedUsers([]);

@@ -1,7 +1,7 @@
 "use client";
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "@/utils/axios";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -24,15 +24,28 @@ export default function EditTrainingPage() {
         startDate: "",
         endDate: "",
     });
+    const [isLoading, setIsLoading] = useState(true);
+    const [isAuthLoading, setIsAuthLoading] = useState(true);
 
     useEffect(() => {
-        if (id) {
-            axios.get(`http://localhost:3000/api/training/${id}`, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-            })
-                .then((res) => {
+        const checkAuthAndFetchData = async () => {
+            try {
+                // Check authentication
+                const authRes = await axios.get("http://localhost:3000/api/auth/verify", {
+                    withCredentials: true
+                })
+                
+                if (authRes.data.user.role !== "HR_ADMIN") {
+                    router.push("/")
+                    return
+                }
+
+                // Fetch training data
+                if (id) {
+                    const res = await axios.get(`http://localhost:3000/api/training/${id}`, {
+                        withCredentials: true
+                    });
+                    
                     const training = res.data.training[0];
 
                     setForm({
@@ -44,12 +57,18 @@ export default function EditTrainingPage() {
                         startDate: training.startDate ? new Date(training.startDate).toISOString().split('T')[0] : "",
                         endDate: training.endDate ? new Date(training.endDate).toISOString().split('T')[0] : "",
                     });
-                })
-                .catch((err) => {
-                    console.error("Failed to fetch training:", err);
-                });
-        }
-    }, [id]);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                router.push("/");
+            } finally {
+                setIsAuthLoading(false);
+                setIsLoading(false);
+            }
+        };
+
+        checkAuthAndFetchData();
+    }, [id, router]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -58,9 +77,7 @@ export default function EditTrainingPage() {
     const handleUpdate = async () => {
         try {
             await axios.patch(`http://localhost:3000/api/training/${id}`, form, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
+                withCredentials: true
             });
             alert("Training updated successfully");
             router.push("/hr_admin/dashboard");
@@ -69,6 +86,17 @@ export default function EditTrainingPage() {
             alert("Update failed");
         }
     };
+
+    if (isAuthLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-muted">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p>Loading...</p>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div>
@@ -160,7 +188,6 @@ export default function EditTrainingPage() {
 
                 <Button onClick={handleUpdate}>Update Training</Button>
             </div>
-            )
         </div>
     );
 }

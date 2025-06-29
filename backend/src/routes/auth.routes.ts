@@ -1,5 +1,5 @@
 import express from 'express';
-import { login, verify } from '../controllers/auth.controller';
+import { login, verify, logout } from '../controllers/auth.controller';
 
 const router = express.Router();
 
@@ -30,5 +30,17 @@ router.post('/login', login);
  *         description: Invalid token
  */
 router.get('/verify', verify);
+
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: User logged out successfully
+ */
+router.post('/logout', logout);
 
 export default router;

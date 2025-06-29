@@ -13,7 +13,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import axios from "axios"
+import axios from "@/utils/axios"
 
 interface User {
     id: string
@@ -33,9 +33,7 @@ export function UserDeleteAlert({ user, onDelete }: { user: User, onDelete: (id:
     try {
       const token = localStorage.getItem("token")
       const res = await axios.delete(`http://localhost:3000/api/user/${user.id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        withCredentials: true,
       })
       
       if (res.status === 200) {

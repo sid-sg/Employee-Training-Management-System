@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import axios from "@/utils/axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,93 +24,99 @@ export default function Profile() {
     confirm: "",
   });
   const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
   useEffect(() => {
-    const role = localStorage.getItem("userRole");
-    if (role !== "EMPLOYEE") {
-      router.push("/");
-      return;
-    }
+    const checkAuthAndFetchProfile = async () => {
+      try {
+        // Check authentication
+        const authRes = await axios.get("http://localhost:3000/api/auth/verify", {
+          withCredentials: true
+        })
+        
+        if (authRes.data.user.role !== "EMPLOYEE") {
+          router.push("/")
+          return
+        }
 
-    if (token) {
-      axios
-        .get(`http://localhost:3000/api/user/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        .then((res) => {
-          setProfile({
-            name: res.data.name,
-            email: res.data.email,
-            phonenumber: res.data.phonenumber ?? "",
-            department: res.data.department,
-          });
-        })
-        .catch((err) => {
-          console.error("Failed to fetch profile", err);
-          setMessage("Failed to load profile.");
+        // Fetch profile data
+        const profileRes = await axios.get(`http://localhost:3000/api/user/me`, {
+          withCredentials: true
         });
-    }
-  }, [router, token]);
+        
+        setProfile({
+          name: profileRes.data.name,
+          email: profileRes.data.email,
+          phonenumber: profileRes.data.phonenumber ?? "",
+          department: profileRes.data.department,
+        });
+      } catch (error) {
+        console.error("Error:", error);
+        router.push("/");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handlePhoneUpdate = () => {
-    if (!token) return;
+    checkAuthAndFetchProfile();
+  }, [router]);
 
-    axios
-      .patch(
+  const handlePhoneUpdate = async () => {
+    try {
+      await axios.patch(
         "http://localhost:3000/api/user/update-phone",
         { phonenumber: profile.phonenumber },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          withCredentials: true
         }
-      )
-      .then(() => {
-        setMessage("Phone number updated successfully!");
-        setTimeout(() => setMessage(""), 3000);
-      })
-      .catch((err) => {
-        console.error(err);
-        setMessage("Failed to update phone number.");
-      });
+      );
+      
+      setMessage("Phone number updated successfully!");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      console.error(err);
+      setMessage("Failed to update phone number.");
+    }
   };
 
-  const handlePasswordUpdate = () => {
-    if (!token) return;
-
+  const handlePasswordUpdate = async () => {
     if (passwords.new !== passwords.confirm) {
       setMessage("New passwords don't match!");
       return;
     }
 
-    axios
-      .patch(
+    try {
+      await axios.patch(
         "http://localhost:3000/api/user/update-password",
         {
           currentPassword: passwords.current,
           newPassword: passwords.new,
         },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          withCredentials: true
         }
-      )
-      .then(() => {
-        setMessage("Password updated successfully!");
-        setPasswords({ current: "", new: "", confirm: "" });
-        setTimeout(() => setMessage(""), 3000);
-      })
-      .catch((err) => {
-        console.error(err);
-        setMessage("Failed to update password.");
-      });
+      );
+      
+      setMessage("Password updated successfully!");
+      setPasswords({ current: "", new: "", confirm: "" });
+      setTimeout(() => setMessage(""), 3000);
+    } catch (err) {
+      console.error(err);
+      setMessage("Failed to update password.");
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-muted">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">

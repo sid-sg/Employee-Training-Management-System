@@ -1,6 +1,6 @@
 "use client"
 
-import axios from "axios"
+import axios from "@/utils/axios"
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -37,36 +37,47 @@ export default function TrainingDetailPage() {
     }
 
     useEffect(() => {
-        if (id) {
-            // Fetch Training Details
-            axios
-                .get(`http://localhost:3000/api/training/${id}`, {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
+        const checkAuthAndFetchTraining = async () => {
+            try {
+                // Check authentication
+                const authRes = await axios.get("http://localhost:3000/api/auth/verify", {
+                    withCredentials: true
                 })
-                .then((res) => {
-                    const trainingData = res.data.training[0]
-                    setTraining({
-                        title: trainingData.title || "",
-                        description: trainingData.description || "",
-                        mode: trainingData.mode || "",
-                        location: trainingData.location || "",
-                        platform: trainingData.platform || "",
-                        startDate: trainingData.startDate
-                            ? new Date(trainingData.startDate).toLocaleDateString()
-                            : "",
-                        endDate: trainingData.endDate
-                            ? new Date(trainingData.endDate).toLocaleDateString()
-                            : "",
-                    })
-                })
-                .catch((err) => {
-                    console.error("Failed to fetch training:", err)
-                })
+                
+                if (authRes.data.user.role !== "EMPLOYEE") {
+                    router.push("/")
+                    return
+                }
 
+                // Fetch Training Details
+                const res = await axios.get(`http://localhost:3000/api/training/${id}`, {
+                    withCredentials: true,
+                })
+                
+                const trainingData = res.data.training[0]
+                setTraining({
+                    title: trainingData.title || "",
+                    description: trainingData.description || "",
+                    mode: trainingData.mode || "",
+                    location: trainingData.location || "",
+                    platform: trainingData.platform || "",
+                    startDate: trainingData.startDate
+                        ? new Date(trainingData.startDate).toLocaleDateString()
+                        : "",
+                    endDate: trainingData.endDate
+                        ? new Date(trainingData.endDate).toLocaleDateString()
+                        : "",
+                })
+            } catch (error) {
+                console.error("Error:", error)
+                router.push("/")
+            }
         }
-    }, [id])
+
+        if (id) {
+            checkAuthAndFetchTraining()
+        }
+    }, [id, router])
 
     return (
         <div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import axios from "axios"
+import axios from "@/utils/axios"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,6 +30,7 @@ export default function SuperAdminDashboard() {
   const [uploadStatus, setUploadStatus] = useState("")
   const [stats, setStats] = useState({ totalEmployees: 0, totalHRAdmins: 0, totalActiveTrainings: 0 })
   const [isCreatingUser, setIsCreatingUser] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [createUserForm, setCreateUserForm] = useState<CreateUserForm>({
     name: "",
     employeeid: "",
@@ -41,16 +42,35 @@ export default function SuperAdminDashboard() {
   const router = useRouter()
 
   useEffect(() => {
-    const userRole = localStorage.getItem("userRole")
-    if (userRole !== "ADMIN") router.push("/")
-    fetchStats()
-  }, [])
+    const checkAuthAndFetchData = async () => {
+      try {
+        // Check authentication
+        const authRes = await axios.get("http://localhost:3000/api/auth/verify", {
+          withCredentials: true
+        })
+        
+        if (authRes.data.user.role !== "ADMIN") {
+          router.push("/")
+          return
+        }
+
+        // Fetch stats
+        await fetchStats()
+      } catch (error) {
+        console.error("Error:", error)
+        router.push("/")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    checkAuthAndFetchData()
+  }, [router])
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem("token")
       const res = await axios.get("http://localhost:3000/api/stats", {
-        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true
       })
       setStats(res.data)
     } catch (error) {
@@ -69,14 +89,14 @@ export default function SuperAdminDashboard() {
     setUploadStatus(`Uploading ${type} data...`)
 
     try {
-      const token = localStorage.getItem("token")
       const endpoint =
         type === "employee"
           ? "http://localhost:3000/api/admin/upload-employees"
           : "http://localhost:3000/api/admin/upload-hr-admins"
 
       const res = await axios.post(endpoint, formData, {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
+        withCredentials: true,
+        headers: { "Content-Type": "multipart/form-data" },
       })
 
       toast.success(`${type === "employee" ? "Employee" : "HR Admin"} data uploaded successfully!`)
@@ -101,13 +121,13 @@ export default function SuperAdminDashboard() {
     setIsCreatingUser(true)
 
     try {
-      const token = localStorage.getItem("token")
       const endpoint = createUserForm.role === "EMPLOYEE" 
         ? "http://localhost:3000/api/admin/upload-employees"
         : "http://localhost:3000/api/admin/upload-hr-admins"
 
       const res = await axios.post(endpoint, createUserForm, {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        withCredentials: true,
+        headers: { "Content-Type": "application/json" },
       })
 
       toast.success(`${createUserForm.role === "EMPLOYEE" ? "Employee" : "HR Admin"} created successfully!`)
@@ -141,6 +161,17 @@ export default function SuperAdminDashboard() {
       phonenumber: "",
       role: "EMPLOYEE"
     })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-muted">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

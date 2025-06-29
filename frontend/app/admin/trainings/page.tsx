@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "@/utils/axios";
 import { toast } from "sonner";
 import Navbar from "@/components/navbar";
 import TrainingCard from "./TrainingCard";
@@ -25,7 +25,7 @@ export default function TrainingsPage() {
             try {
                 const token = localStorage.getItem("token");
                 const res = await axios.get("http://localhost:3000/api/training", {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: { withCredentials: true },
                 });
 
                 setTrainings(res.data.trainings);
