@@ -14,6 +14,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Upload, Users, BookOpen, UserPlus } from "lucide-react"
 import Navbar from "@/components/navbar"
 import DashboardCard from "./DashboardCard"
+import { adminUserCreationSchema, adminFileUploadSchema } from "@/lib/validations/admin.validation"
+import { AlertCircle } from "lucide-react"
 
 interface CreateUserForm {
   name: string
@@ -39,6 +41,8 @@ export default function SuperAdminDashboard() {
     phonenumber: "",
     role: "EMPLOYEE"
   })
+  const [userFormErrors, setUserFormErrors] = useState<string[]>([])
+  const [fileUploadErrors, setFileUploadErrors] = useState<string[]>([])
   const router = useRouter()
 
   useEffect(() => {
@@ -80,8 +84,20 @@ export default function SuperAdminDashboard() {
   }
 
   const handleFileUpload = async (type: "employee" | "hr") => {
+    setFileUploadErrors([])
     const file = type === "employee" ? employeeFile : hrFile
-    if (!file) return toast.error("No file selected")
+    if (!file) {
+      setFileUploadErrors(["No file selected"])
+      toast.error("No file selected")
+      return
+    }
+    // Zod validation
+    const result = adminFileUploadSchema.safeParse({ file })
+    if (!result.success) {
+      setFileUploadErrors(result.error.errors.map(e => e.message))
+      toast.error("Please select a valid file")
+      return
+    }
 
     const formData = new FormData()
     formData.append("file", file)
@@ -111,13 +127,14 @@ export default function SuperAdminDashboard() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Validate form
-    if (!createUserForm.name || !createUserForm.employeeid || !createUserForm.email || !createUserForm.department) {
-      toast.error("Please fill in all required fields")
+    setUserFormErrors([])
+    // Zod validation
+    const result = adminUserCreationSchema.safeParse(createUserForm)
+    if (!result.success) {
+      setUserFormErrors(result.error.errors.map(e => e.message))
+      toast.error("Please fix the errors in the form.")
       return
     }
-
     setIsCreatingUser(true)
 
     try {
@@ -224,6 +241,17 @@ export default function SuperAdminDashboard() {
                 <CardDescription>Create a single user account. Password will be auto-generated and sent to the user's email.</CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Validation errors */}
+                {userFormErrors.length > 0 && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertDescription>
+                      <ul className="list-disc list-inside">
+                        {userFormErrors.map((err, idx) => <li key={idx}>{err}</li>)}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <form onSubmit={handleCreateUser} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -250,7 +278,7 @@ export default function SuperAdminDashboard() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email Address *</Label>
+                      <Label htmlFor="email">Email *</Label>
                       <Input
                         id="email"
                         type="email"
@@ -266,7 +294,7 @@ export default function SuperAdminDashboard() {
                         id="phonenumber"
                         value={createUserForm.phonenumber}
                         onChange={(e) => setCreateUserForm(prev => ({ ...prev, phonenumber: e.target.value }))}
-                        placeholder="Enter phone number"
+                        placeholder="Enter phone number (optional)"
                       />
                     </div>
                   </div>
@@ -320,6 +348,17 @@ export default function SuperAdminDashboard() {
                 <CardDescription>CSV with name, employeeid, email, department, phone required</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Validation errors */}
+                {fileUploadErrors.length > 0 && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertDescription>
+                      <ul className="list-disc list-inside">
+                        {fileUploadErrors.map((err, idx) => <li key={idx}>{err}</li>)}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="employee-file">Employee CSV File</Label>
                   <Input
@@ -344,6 +383,17 @@ export default function SuperAdminDashboard() {
                 <CardDescription>CSV with name, employeeid, email, department, phone required</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Validation errors */}
+                {fileUploadErrors.length > 0 && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertDescription>
+                      <ul className="list-disc list-inside">
+                        {fileUploadErrors.map((err, idx) => <li key={idx}>{err}</li>)}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="hr-file">HR Admin CSV File</Label>
                   <Input

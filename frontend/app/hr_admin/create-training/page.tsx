@@ -8,17 +8,8 @@ import { Calendar, Users } from "lucide-react"
 import Navbar from "@/components/navbar"
 import { EnhancedStepper } from "./enhanced-stepper"
 import { TrainingForm } from "./training-form"
-import { EmployeeAssignment, type Employee } from "./employee-assignment"
-
-interface TrainingFormData {
-    title: string
-    mode: "ONLINE" | "OFFLINE"
-    description: string
-    startDate: string
-    endDate: string
-    location: string
-    platform: string
-}
+import { EmployeeAssignment } from "./employee-assignment"
+import { TrainingFormData, Employee } from "@/lib/validations/hr-admin.validation"
 
 export default function CreateTrainingPage() {
     const [currentStep, setCurrentStep] = useState(0)

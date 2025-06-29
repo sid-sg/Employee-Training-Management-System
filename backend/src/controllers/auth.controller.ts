@@ -3,18 +3,10 @@ import prisma from '../prisma/client';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
+import { LoginRequest } from '../validations/auth.validation';
 
-export const login = async (req: Request, res: Response): Promise<void> => {
-  if(!req.body) {
-    res.status(400).json({ message: 'Request body is required' });
-    return;
-  }
+export const login = async (req: Request<{}, {}, LoginRequest>, res: Response): Promise<void> => {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    res.status(400).json({ message: 'Email and password required' });
-    return;
-  }
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
@@ -41,7 +33,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-
 
     res.json({
       // token,

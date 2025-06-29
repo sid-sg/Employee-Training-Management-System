@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { ArrowLeft, Send } from "lucide-react"
+import { ArrowLeft, Send, AlertCircle } from "lucide-react"
 import Navbar from "@/components/navbar"
 import axios from "@/utils/axios"
 import { toast } from "sonner"
+import { feedbackSchema } from "@/lib/validations/employee.validation"
 
 export default function TrainingFeedbackPage() {
     const params = useParams()
@@ -52,6 +53,8 @@ export default function TrainingFeedbackPage() {
         title: "",
         mode: ""
     })
+
+    const [errors, setErrors] = useState<string[]>([])
 
     useEffect(() => {
         const checkAuthAndFetchData = async () => {
@@ -99,35 +102,22 @@ export default function TrainingFeedbackPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-
-        const allRatings = [
-            trainingFeedback.duration,
-            trainingFeedback.pace,
-            trainingFeedback.content,
-            trainingFeedback.relevance,
-            trainingFeedback.usefulness,
-            trainingFeedback.confidence,
-            trainerFeedback.knowledge,
-            trainerFeedback.explanation,
-            trainerFeedback.answers,
-            trainerFeedback.utility,
-            trainerFeedback.information
-        ]
-
-        const allFieldsFilled = allRatings.every(rating => rating !== "")
-
-        if (!allFieldsFilled) {
-            toast.error("Please provide ratings for all required questions.")
-            return
-        }
+        setErrors([])
 
         const feedbackData = {
-            trainingId,
-            userInfo,
+            userInfo: { name: userInfo.name, department: userInfo.department },
             trainingFeedback,
             trainerFeedback,
             comments,
-            modeOfAttendance: training.mode === "ONLINE" ? "Video Conferencing" : "Direct Participation"
+            modeOfAttendance: training.mode === "ONLINE" ? "VIRTUAL" : "IN_PERSON"
+        }
+
+        // Zod validation
+        const result = feedbackSchema.safeParse(feedbackData)
+        if (!result.success) {
+            setErrors(result.error.errors.map(e => e.message))
+            toast.error("Please fix the errors in the form.")
+            return
         }
 
         try {
@@ -190,6 +180,19 @@ export default function TrainingFeedbackPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-8">
+                    {/* General validation errors */}
+                    {errors.length > 0 && (
+                        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                            <div className="flex items-center gap-2 mb-1">
+                                <AlertCircle className="w-4 h-4" />
+                                <span className="font-semibold">Please fix the following errors:</span>
+                            </div>
+                            <ul className="list-disc list-inside ml-6">
+                                {errors.map((err, idx) => <li key={idx}>{err}</li>)}
+                            </ul>
+                        </div>
+                    )}
+
                     {/* Fixed Input Section */}
                     <Card>
                         <CardHeader>
@@ -227,7 +230,7 @@ export default function TrainingFeedbackPage() {
                                     <Label htmlFor="mode">Mode of Attendance</Label>
                                     <Input
                                         id="mode"
-                                        value={training.mode === "ONLINE" ? "Video Conferencing" : "Direct participation"}
+                                        value={training.mode === "ONLINE" ? "Virtual" : "In Person"}
                                         readOnly
                                     />
                                 </div>

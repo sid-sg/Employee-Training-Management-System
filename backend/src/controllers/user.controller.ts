@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../prisma/client';
 import bcrypt from 'bcrypt';
+import { UserSearchRequest } from '../validations/user.validation';
+import { PhoneNumberUpdateRequest, UserIdParams } from '../validations/employee.validation';
 
 interface AuthRequest extends Request {
   user?: { userId: string };
@@ -12,13 +14,8 @@ enum Role {
   ADMIN,
 }
 
-export const getUser = async (req: AuthRequest, res: Response) => {
+export const getUser = async (req: AuthRequest & { params: UserIdParams }, res: Response) => {
   const { id } = req.params;
-
-  if (!id) {
-    res.status(400).json({ error: "User ID is required" });
-    return;
-  }
 
   try {
     const user = await prisma.user.findUnique({
@@ -81,26 +78,37 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const searchEmployees = async (req: AuthRequest, res: Response) => {
-  const query = req.query.q as string;
+export const searchEmployees = async (req: AuthRequest & { query: UserSearchRequest }, res: Response) => {
+  const { q, query, role } = req.query;
+  
+  // Use either 'q' or 'query' parameter, with 'q' taking precedence for backward compatibility
+  const searchQuery = q || query;
 
   try {
+    const whereClause: any = {
+      OR: [
+        { name: { contains: searchQuery, mode: "insensitive" } },
+        { employeeid: { contains: searchQuery, mode: "insensitive" } },
+        { email: { contains: searchQuery, mode: "insensitive" } },
+        { department: { contains: searchQuery, mode: "insensitive" } },
+      ],
+      // Exclude admin users from search results
+      role: { not: 'ADMIN' }
+    };
+
+    if (role) {
+      whereClause.role = role;
+    }
+
     const users = await prisma.user.findMany({
-      where: {
-        role: "EMPLOYEE",
-        OR: [
-          { name: { contains: query, mode: "insensitive" } },
-          { employeeid: { contains: query, mode: "insensitive" } },
-          { email: { contains: query, mode: "insensitive" } },
-          { department: { contains: query, mode: "insensitive" } },
-        ],
-      },
+      where: whereClause,
       select: {
         id: true,
-          employeeid: true,
-      name: true,
+        employeeid: true,
+        name: true,
         email: true,
         department: true,
+        role: true,
       },
       orderBy: {
         name: "asc",
@@ -115,14 +123,9 @@ export const searchEmployees = async (req: AuthRequest, res: Response) => {
 };
 
 
-export const updatePhoneNumber = async (req: AuthRequest, res: Response) => {
+export const updatePhoneNumber = async (req: AuthRequest & { body: PhoneNumberUpdateRequest }, res: Response) => {
   const userId = req.user?.userId;
   const { phonenumber } = req.body;
-
-  if (!phonenumber) {
-    res.status(400).json({ error: 'Phone number is required' });
-    return;
-  }
 
   try {
     await prisma.user.update({

@@ -1,5 +1,7 @@
 import express from 'express';
 import { login, verify, logout } from '../controllers/auth.controller';
+import { validate } from '../middlewares/validation.middleware';
+import { loginSchema } from '../validations/auth.validation';
 
 const router = express.Router();
 
@@ -9,11 +11,35 @@ const router = express.Router();
  *   post:
  *     summary: Login user
  *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: User's email address
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 description: User's password
  *     responses:
  *       200:
  *         description: User logged in successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Invalid credentials
+ *       404:
+ *         description: User not found
  */
-router.post('/login', login);
+router.post('/login', validate(loginSchema), login);
 
 /**
  * @swagger

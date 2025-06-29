@@ -183,9 +183,10 @@ export default function EnrolledEmployeesCard({
 
         setIsDeenrolling(true);
         try {
-            await axios.delete(`http://localhost:3000/api/training/${trainingId}/unenroll`, {
-                withCredentials: true,
-                data: { userIds: selectedUsers }
+            await axios.post(`http://localhost:3000/api/training/${trainingId}/deenroll`, {
+                userIds: selectedUsers
+            }, {
+                withCredentials: true
             });
 
             toast.success(`${selectedUsers.length} employee(s) de-enrolled successfully!`);

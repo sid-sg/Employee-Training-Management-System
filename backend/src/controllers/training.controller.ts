@@ -3,30 +3,19 @@ import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import { sendEmail } from '../mailer/mailer';
 import { trainingEnrollmentTemplate } from '../mailer/templates';
+import { 
+  TrainingRequest, 
+  TrainingUpdateRequest, 
+  UserEnrollmentRequest, 
+  TrainingIdParams, 
+  TrainingIdEnrollmentParams 
+} from '../validations/training.validation';
+import { TrainingFeedbackRequest, TrainingIdFeedbackParams } from '../validations/employee.validation';
 
 const prisma = new PrismaClient();
 
-export const createTraining = async (req: AuthRequest, res: Response): Promise<void> => {
-    if (!req.body) {
-        res.status(400).json({ error: 'Request body is required' });
-        return;
-    }
+export const createTraining = async (req: AuthRequest & { body: TrainingRequest }, res: Response): Promise<void> => {
     const { title, description, mode, location, platform, startDate, endDate } = req.body;
-
-    if (!title || !description || !mode || !startDate || !endDate) {
-        res.status(400).json({ error: 'Missing required fields' });
-        return;
-    }
-
-    if (mode === 'OFFLINE' && !location) {
-        res.status(400).json({ error: 'Location is required for offline trainings' });
-        return;
-    }
-
-    if (mode === 'ONLINE' && !platform) {
-        res.status(400).json({ error: 'Platform is required for online trainings' });
-        return;
-    }
 
     try {
         const training = await prisma.training.create({
@@ -49,24 +38,9 @@ export const createTraining = async (req: AuthRequest, res: Response): Promise<v
     }
 };
 
-export const updateTraining = async (req: AuthRequest, res: Response): Promise<void> => {
+export const updateTraining = async (req: AuthRequest & { body: TrainingUpdateRequest, params: TrainingIdParams }, res: Response): Promise<void> => {
     const { id } = req.params;
-
-    if (!id) {
-        res.status(400).json({ error: 'Training ID is required' });
-        return;
-    }
-
     const { title, description, mode, location, platform, startDate, endDate } = req.body;
-
-    if (mode === 'OFFLINE' && !location) {
-        res.status(400).json({ error: 'Location is required for offline trainings' });
-        return;
-    }
-    if (mode === 'ONLINE' && !platform) {
-        res.status(400).json({ error: 'Platform is required for online trainings' });
-        return;
-    }
 
     try {
         const existing = await prisma.training.findUnique({ where: { id } });
@@ -95,13 +69,8 @@ export const updateTraining = async (req: AuthRequest, res: Response): Promise<v
     }
 };
 
-export const deleteTraining = async (req: AuthRequest, res: Response): Promise<void> => {
+export const deleteTraining = async (req: AuthRequest & { params: TrainingIdParams }, res: Response): Promise<void> => {
     const { id } = req.params;
-
-    if (!id) {
-        res.status(400).json({ error: 'Training ID is required' });
-        return;
-    }
 
     try {
         const existing = await prisma.training.findUnique({ where: { id } });
@@ -118,7 +87,6 @@ export const deleteTraining = async (req: AuthRequest, res: Response): Promise<v
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
 
 export const getAllTrainings = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -148,31 +116,48 @@ export const getAllTrainings = async (req: AuthRequest, res: Response): Promise<
 
 };
 
-
-export const getTraining = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getTraining = async (req: AuthRequest & { params: TrainingIdParams }, res: Response): Promise<void> => {
     const { id } = req.params;
+    const { userId, role } = req.user!;
+
     try {
+        // For employees, check if they are enrolled in this training
+        if (role === 'EMPLOYEE') {
+            const enrollment = await prisma.trainingEnrollment.findUnique({
+                where: {
+                    employeeId_trainingId: {
+                        employeeId: userId,
+                        trainingId: id,
+                    },
+                },
+            });
+
+            if (!enrollment) {
+                res.status(403).json({ error: 'You are not enrolled in this training' });
+                return;
+            }
+        }
+
         const training = await prisma.training.findMany({
             where: {
                 id,
             }
         });
 
+        if (training.length === 0) {
+            res.status(404).json({ error: 'Training not found' });
+            return;
+        }
+
         res.status(200).json({ training });
     } catch (error) {
         console.error('Error fetching created training:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
-
 };
 
-export const getEnrolledUsersOfTraining = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getEnrolledUsersOfTraining = async (req: AuthRequest & { params: TrainingIdEnrollmentParams }, res: Response): Promise<void> => {
     const { trainingId } = req.params;
-
-    if (!trainingId) {
-        res.status(400).json({ error: "Training ID is required" });
-        return;
-    }
 
     try {
         const enrolledUsers = await prisma.trainingEnrollment.findMany({
@@ -197,28 +182,21 @@ export const getEnrolledUsersOfTraining = async (req: AuthRequest, res: Response
     }
 };
 
-export const getAvailableEmployeesForTraining = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getAvailableEmployeesForTraining = async (req: AuthRequest & { params: TrainingIdEnrollmentParams }, res: Response): Promise<void> => {
     const { trainingId } = req.params;
 
-    if (!trainingId) {
-        res.status(400).json({ error: "Training ID is required" });
-        return;
-    }
-
     try {
-        // Get all enrolled employee IDs for this training
-        const enrolledEmployeeIds = await prisma.trainingEnrollment.findMany({
+        const enrolledUserIds = await prisma.trainingEnrollment.findMany({
             where: { trainingId },
             select: { employeeId: true }
         });
 
-        const enrolledIds = enrolledEmployeeIds.map(enrollment => enrollment.employeeId);
+        const enrolledIds = enrolledUserIds.map(enrollment => enrollment.employeeId);
 
-        // Get all employees who are not enrolled in this training
         const availableEmployees = await prisma.user.findMany({
             where: {
-                id: { notIn: enrolledIds },
-                role: 'EMPLOYEE' // Only show employees, not admins or HR admins
+                role: { in: ['EMPLOYEE', 'HR_ADMIN'] },
+                id: { notIn: enrolledIds }
             },
             select: {
                 id: true,
@@ -227,30 +205,19 @@ export const getAvailableEmployeesForTraining = async (req: AuthRequest, res: Re
                 email: true,
                 department: true,
                 phonenumber: true
-            },
-            orderBy: {
-                name: 'asc'
             }
         });
 
-        res.json({
-            employees: availableEmployees
-        });
-
+        res.json({ employees: availableEmployees });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to fetch available employees" });
     }
 };
 
-export const enrollUsersInTraining = async (req: AuthRequest, res: Response): Promise<void> => {
+export const enrollUsersInTraining = async (req: AuthRequest & { body: UserEnrollmentRequest, params: TrainingIdEnrollmentParams }, res: Response): Promise<void> => {
     const { trainingId } = req.params;
     const { userIds } = req.body;
-
-    if (!Array.isArray(userIds) || userIds.length === 0) {
-        res.status(400).json({ error: 'userIds must be a non-empty array' });
-        return;
-    }
 
     try {
         const training = await prisma.training.findUnique({
@@ -267,7 +234,7 @@ export const enrollUsersInTraining = async (req: AuthRequest, res: Response): Pr
         });
 
         const enrollments = await Promise.all(
-            userIds.map(userId =>
+            userIds.map((userId: string) =>
                 prisma.trainingEnrollment.upsert({
                     where: {
                         employeeId_trainingId: { employeeId: userId, trainingId },
@@ -282,7 +249,7 @@ export const enrollUsersInTraining = async (req: AuthRequest, res: Response): Pr
         );
 
         await Promise.allSettled(
-            users.map(user =>
+            users.map((user) =>
                 sendEmail(
                     user.email,
                     `${training.title} Enrollment`,
@@ -299,27 +266,20 @@ export const enrollUsersInTraining = async (req: AuthRequest, res: Response): Pr
             )
         );
 
-
         res.status(201).json({ message: 'Users enrolled successfully', enrollments });
     } catch (error) {
         console.error('Error enrolling users:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
-
 };
 
-export const deenrollUsersFromTraining = async (req: AuthRequest, res: Response): Promise<void> => {
+export const deenrollUsersFromTraining = async (req: AuthRequest & { body: UserEnrollmentRequest, params: TrainingIdEnrollmentParams }, res: Response): Promise<void> => {
     const { trainingId } = req.params;
     const { userIds } = req.body;
 
-    if (!Array.isArray(userIds) || userIds.length === 0) {
-        res.status(400).json({ error: 'userIds must be a non-empty array' });
-        return;
-    }
-
     try {
         const deletions = await Promise.all(
-            userIds.map(userId =>
+            userIds.map((userId: string) =>
                 prisma.trainingEnrollment.deleteMany({
                     where: {
                         employeeId: userId,
@@ -336,8 +296,7 @@ export const deenrollUsersFromTraining = async (req: AuthRequest, res: Response)
     }
 };
 
-
-export const submitTrainingFeedback = async (req: AuthRequest, res: Response): Promise<void> => {
+export const submitTrainingFeedback = async (req: AuthRequest & { body: TrainingFeedbackRequest, params: TrainingIdFeedbackParams }, res: Response): Promise<void> => {
     const { id: trainingId } = req.params
     const { userId } = req.user!
 
@@ -386,7 +345,6 @@ export const submitTrainingFeedback = async (req: AuthRequest, res: Response): P
         const numericRatings = allRatings.map(r => parseInt(r)).filter(n => !isNaN(n))
         const ratingSum = numericRatings.reduce((acc, n) => acc + n, 0)
         const avgRating = numericRatings.length > 0 ? ratingSum / numericRatings.length : 0
-
 
         const updatedRating = ((currentTotalRating * participantCount) + avgRating) / (participantCount + 1)
 

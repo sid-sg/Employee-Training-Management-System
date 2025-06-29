@@ -8,8 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Save } from "lucide-react";
+import { Save, AlertCircle } from "lucide-react";
 import Navbar from "@/components/navbar";
+import { phoneNumberSchema, passwordUpdateSchema } from "@/lib/validations/employee.validation";
+import { z } from "zod";
 
 export default function Profile() {
   const [profile, setProfile] = useState({
@@ -25,6 +27,8 @@ export default function Profile() {
   });
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -63,6 +67,14 @@ export default function Profile() {
   }, [router]);
 
   const handlePhoneUpdate = async () => {
+    setPhoneError(null);
+    setMessage("");
+    // Validate phone number
+    const result = phoneNumberSchema.safeParse({ phonenumber: profile.phonenumber });
+    if (!result.success) {
+      setPhoneError(result.error.errors[0].message);
+      return;
+    }
     try {
       await axios.patch(
         "http://localhost:3000/api/user/update-phone",
@@ -71,7 +83,6 @@ export default function Profile() {
           withCredentials: true
         }
       );
-      
       setMessage("Phone number updated successfully!");
       setTimeout(() => setMessage(""), 3000);
     } catch (err) {
@@ -81,11 +92,14 @@ export default function Profile() {
   };
 
   const handlePasswordUpdate = async () => {
-    if (passwords.new !== passwords.confirm) {
-      setMessage("New passwords don't match!");
+    setPasswordErrors([]);
+    setMessage("");
+    // Validate passwords
+    const result = passwordUpdateSchema.safeParse(passwords);
+    if (!result.success) {
+      setPasswordErrors(result.error.errors.map(e => e.message));
       return;
     }
-
     try {
       await axios.patch(
         "http://localhost:3000/api/user/update-password",
@@ -97,7 +111,6 @@ export default function Profile() {
           withCredentials: true
         }
       );
-      
       setMessage("Password updated successfully!");
       setPasswords({ current: "", new: "", confirm: "" });
       setTimeout(() => setMessage(""), 3000);
@@ -145,6 +158,9 @@ export default function Profile() {
                   value={profile.phonenumber}
                   onChange={(e) => setProfile({ ...profile, phonenumber: e.target.value })}
                 />
+                {phoneError && (
+                  <p className="text-sm text-red-500 flex items-center gap-1"><AlertCircle className="w-4 h-4" />{phoneError}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="department">Department</Label>
@@ -191,6 +207,16 @@ export default function Profile() {
                   onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
                 />
               </div>
+              {passwordErrors.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertCircle className="w-4 h-4" />
+                  <AlertDescription>
+                    <ul className="list-disc list-inside">
+                      {passwordErrors.map((err, idx) => <li key={idx}>{err}</li>)}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
               <Button onClick={handlePasswordUpdate}>
                 <Save className="h-4 w-4 mr-2" />
                 Update Password

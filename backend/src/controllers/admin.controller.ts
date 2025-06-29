@@ -5,6 +5,7 @@ import bcrypt from 'bcrypt';
 import prisma from '../prisma/client';
 import { sendEmail } from '../mailer/mailer';
 import { onboardingTemplate } from '../mailer/templates';
+import { AdminUserCreationRequest } from '../validations/admin.validation';
 
 function generateRandomPassword(length = 10): string {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#';
@@ -79,13 +80,8 @@ const handleCSVUpload = async (req: Request, res: Response, role: 'EMPLOYEE' | '
         });
 };
 
-const createSingleUser = async (req: Request, res: Response, role: 'EMPLOYEE' | 'HR_ADMIN'): Promise<any> => {
+const createSingleUser = async (req: Request & { body: AdminUserCreationRequest }, res: Response, role: 'EMPLOYEE' | 'HR_ADMIN'): Promise<any> => {
     const { name, employeeid, email, phonenumber, department } = req.body;
-
-    // Validate required fields
-    if (!name || !employeeid || !email || !department) {
-        return res.status(400).json({ error: 'Missing required fields: name, employeeid, email, department' });
-    }
 
     try {
         // Check if user already exists

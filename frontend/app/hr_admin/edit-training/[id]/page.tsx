@@ -7,18 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import Navbar from "@/components/navbar";
-
+import { trainingUpdateSchema, TrainingUpdateData } from "@/lib/validations/hr-admin.validation";
+import { validateForm } from "@/lib/validations/form-utils";
 
 export default function EditTrainingPage() {
     const router = useRouter();
     const params = useParams();
     const id = params.id as string;
 
-    const [form, setForm] = useState({
+    const [form, setForm] = useState<TrainingUpdateData>({
         title: "",
         description: "",
-        mode: "",
+        mode: undefined,
         location: "",
         platform: "",
         startDate: "",
@@ -26,6 +29,8 @@ export default function EditTrainingPage() {
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isAuthLoading, setIsAuthLoading] = useState(true);
+    const [errors, setErrors] = useState<string[]>([]);
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
         const checkAuthAndFetchData = async () => {
@@ -51,7 +56,7 @@ export default function EditTrainingPage() {
                     setForm({
                         title: training.title || "",
                         description: training.description || "",
-                        mode: training.mode || "",
+                        mode: training.mode || undefined,
                         location: training.location || "",
                         platform: training.platform || "",
                         startDate: training.startDate ? new Date(training.startDate).toISOString().split('T')[0] : "",
@@ -70,13 +75,49 @@ export default function EditTrainingPage() {
         checkAuthAndFetchData();
     }, [id, router]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+    const handleChange = (field: keyof TrainingUpdateData, value: string) => {
+        // Clear field-specific error when user starts typing
+        if (fieldErrors[field]) {
+            setFieldErrors(prev => ({ ...prev, [field]: '' }));
+        }
+        
+        setForm({ ...form, [field]: value });
     };
 
-    const handleUpdate = async () => {
+    const validateAndUpdate = async () => {
+        // Clear previous errors
+        setErrors([]);
+        setFieldErrors({});
+
+        // Filter out empty fields for validation
+        const formData = Object.fromEntries(
+            Object.entries(form).filter(([_, value]) => value !== "" && value !== undefined)
+        );
+
+        // Validate the form
+        const validation = validateForm(trainingUpdateSchema, formData);
+        
+        if (!validation.success) {
+            setErrors(validation.errors);
+            
+            // Create field-specific error mapping
+            const fieldErrorMap: Record<string, string> = {};
+            validation.errors.forEach(error => {
+                if (error.includes('title')) fieldErrorMap.title = error;
+                else if (error.includes('description')) fieldErrorMap.description = error;
+                else if (error.includes('mode')) fieldErrorMap.mode = error;
+                else if (error.includes('location')) fieldErrorMap.location = error;
+                else if (error.includes('platform')) fieldErrorMap.platform = error;
+                else if (error.includes('start date')) fieldErrorMap.startDate = error;
+                else if (error.includes('end date')) fieldErrorMap.endDate = error;
+            });
+            setFieldErrors(fieldErrorMap);
+            return;
+        }
+
+        // If validation passes, proceed with update
         try {
-            await axios.patch(`http://localhost:3000/api/training/${id}`, form, {
+            await axios.patch(`http://localhost:3000/api/training/${id}`, formData, {
                 withCredentials: true
             });
             alert("Training updated successfully");
@@ -104,38 +145,66 @@ export default function EditTrainingPage() {
             <div className="max-w-xl mx-auto mt-10 space-y-4">
                 <h2 className="text-2xl font-bold mb-4">Edit Training</h2>
 
+                {/* General validation errors */}
+                {errors.length > 0 && (
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                            Please fix the following errors:
+                            <ul className="mt-2 list-disc list-inside">
+                                {errors.map((error, index) => (
+                                    <li key={index}>{error}</li>
+                                ))}
+                            </ul>
+                        </AlertDescription>
+                    </Alert>
+                )}
+
                 <div className="space-y-2">
                     <Label htmlFor="title">Title</Label>
                     <Input
                         id="title"
-                        name="title"
                         value={form.title}
-                        onChange={handleChange}
+                        onChange={(e) => handleChange('title', e.target.value)}
                         placeholder="Enter training title"
+                        className={fieldErrors.title ? "border-red-500" : ""}
                     />
+                    {fieldErrors.title && (
+                        <p className="text-sm text-red-500">{fieldErrors.title}</p>
+                    )}
                 </div>
 
                 <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
                     <Textarea
                         id="description"
-                        name="description"
                         value={form.description}
-                        onChange={handleChange}
+                        onChange={(e) => handleChange('description', e.target.value)}
                         placeholder="Enter training description"
+                        className={fieldErrors.description ? "border-red-500" : ""}
                     />
+                    {fieldErrors.description && (
+                        <p className="text-sm text-red-500">{fieldErrors.description}</p>
+                    )}
                 </div>
 
                 <div className="space-y-2">
                     <Label htmlFor="mode">Mode</Label>
-
-                    <Select value={form.mode} onValueChange={(value) => setForm({ ...form, mode: value as "ONLINE" | "OFFLINE" })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select 
+                        value={form.mode} 
+                        onValueChange={(value) => handleChange('mode', value as "ONLINE" | "OFFLINE")}
+                    >
+                        <SelectTrigger className={fieldErrors.mode ? "border-red-500" : ""}>
+                            <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="ONLINE">ONLINE</SelectItem>
                             <SelectItem value="OFFLINE">OFFLINE</SelectItem>
                         </SelectContent>
                     </Select>
+                    {fieldErrors.mode && (
+                        <p className="text-sm text-red-500">{fieldErrors.mode}</p>
+                    )}
                 </div>
 
                 {form.mode === "OFFLINE" && (
@@ -143,11 +212,14 @@ export default function EditTrainingPage() {
                         <Label htmlFor="location">Location</Label>
                         <Input
                             id="location"
-                            name="location"
                             value={form.location}
-                            onChange={handleChange}
+                            onChange={(e) => handleChange('location', e.target.value)}
                             placeholder="Enter training location"
+                            className={fieldErrors.location ? "border-red-500" : ""}
                         />
+                        {fieldErrors.location && (
+                            <p className="text-sm text-red-500">{fieldErrors.location}</p>
+                        )}
                     </div>
                 )}
 
@@ -156,11 +228,14 @@ export default function EditTrainingPage() {
                         <Label htmlFor="platform">Platform</Label>
                         <Input
                             id="platform"
-                            name="platform"
                             value={form.platform}
-                            onChange={handleChange}
+                            onChange={(e) => handleChange('platform', e.target.value)}
                             placeholder="Enter online platform"
+                            className={fieldErrors.platform ? "border-red-500" : ""}
                         />
+                        {fieldErrors.platform && (
+                            <p className="text-sm text-red-500">{fieldErrors.platform}</p>
+                        )}
                     </div>
                 )}
 
@@ -168,25 +243,33 @@ export default function EditTrainingPage() {
                     <Label htmlFor="startDate">Start Date</Label>
                     <Input
                         id="startDate"
-                        name="startDate"
                         value={form.startDate}
-                        onChange={handleChange}
+                        onChange={(e) => handleChange('startDate', e.target.value)}
                         type="date"
+                        className={fieldErrors.startDate ? "border-red-500" : ""}
                     />
+                    {fieldErrors.startDate && (
+                        <p className="text-sm text-red-500">{fieldErrors.startDate}</p>
+                    )}
                 </div>
 
                 <div className="space-y-2">
                     <Label htmlFor="endDate">End Date</Label>
                     <Input
                         id="endDate"
-                        name="endDate"
                         value={form.endDate}
-                        onChange={handleChange}
+                        onChange={(e) => handleChange('endDate', e.target.value)}
                         type="date"
+                        className={fieldErrors.endDate ? "border-red-500" : ""}
                     />
+                    {fieldErrors.endDate && (
+                        <p className="text-sm text-red-500">{fieldErrors.endDate}</p>
+                    )}
                 </div>
 
-                <Button onClick={handleUpdate}>Update Training</Button>
+                <Button onClick={validateAndUpdate} disabled={isLoading}>
+                    {isLoading ? "Updating..." : "Update Training"}
+                </Button>
             </div>
         </div>
     );

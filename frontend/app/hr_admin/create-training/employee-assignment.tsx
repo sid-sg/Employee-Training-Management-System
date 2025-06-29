@@ -1,20 +1,16 @@
 "use client"
 
+import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Search, X, Users, Check } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Search, X, Users, Check, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-export interface Employee {
-    id: string
-    name: string
-    employeeid: string
-    email: string
-    department: string
-}
+import { employeeAssignmentSchema, employeeSearchSchema, Employee } from "@/lib/validations/hr-admin.validation"
+import { validateForm } from "@/lib/validations/form-utils"
 
 interface EmployeeAssignmentProps {
     trainingTitle: string
@@ -39,6 +35,46 @@ export function EmployeeAssignment({
     setSearchQuery,
     isLoading = false,
 }: EmployeeAssignmentProps) {
+    const [errors, setErrors] = useState<string[]>([]);
+
+    const validateAndAssign = () => {
+        // Clear previous errors
+        setErrors([]);
+
+        // Validate employee selection
+        const employeeIds = selectedEmployees.map(emp => emp.id);
+        const validation = validateForm(employeeAssignmentSchema, { employeeIds });
+        
+        if (!validation.success) {
+            setErrors(validation.errors);
+            return;
+        }
+
+        // If validation passes, call the assign function
+        onAssign();
+    };
+
+    const handleSearchChange = (value: string) => {
+        // Validate search query
+        const searchValidation = validateForm(employeeSearchSchema, { query: value });
+        
+        if (searchValidation.success) {
+            setSearchQuery(value);
+        } else {
+            // Still allow the search but show warning for very long queries
+            if (value.length > 100) {
+                setErrors(['Search query is too long']);
+                return;
+            }
+            setSearchQuery(value);
+        }
+        
+        // Clear errors when user starts typing
+        if (errors.length > 0) {
+            setErrors([]);
+        }
+    };
+
     return (
         <Card>
             <CardHeader>
@@ -52,15 +88,28 @@ export function EmployeeAssignment({
             </CardHeader>
 
             <CardContent className="space-y-6">
+                {/* Validation errors */}
+                {errors.length > 0 && (
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                            {errors.map((error, index) => (
+                                <div key={index}>{error}</div>
+                            ))}
+                        </AlertDescription>
+                    </Alert>
+                )}
+
                 {/* Search Bar */}
                 <div className="relative">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Search employees by name, email, or department..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => handleSearchChange(e.target.value)}
                         className="pl-10"
                         disabled={isLoading}
+                        maxLength={100}
                     />
                 </div>
 
@@ -128,7 +177,7 @@ export function EmployeeAssignment({
 
                 <div className="flex justify-end pt-4">
                     <Button
-                        onClick={onAssign}
+                        onClick={validateAndAssign}
                         disabled={selectedEmployees.length === 0 || isLoading}
                         className="min-w-32"
                     >

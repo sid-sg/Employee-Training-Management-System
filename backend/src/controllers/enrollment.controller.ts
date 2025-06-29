@@ -1,15 +1,14 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import prisma from '../prisma/client';
+import { TrainingRatingRequest, UserIdParams } from '../validations/employee.validation';
 
-export const rateTraining = async (req: AuthRequest, res: Response) : Promise<void> => {
+// Note: This function is commented out because the 'rating' field doesn't exist in the TrainingEnrollment model
+// If rating functionality is needed, the Prisma schema should be updated to include a rating field
+/*
+export const rateTraining = async (req: AuthRequest & { body: TrainingRatingRequest, params: UserIdParams }, res: Response) : Promise<void> => {
     const { id } = req.params;
     const { rating } = req.body;
-
-    if (!rating || rating < 0 || rating > 5) {
-        res.status(400).json({ error: 'Rating must be between 0 and 5' });
-        return;
-    }
 
     try {
         const enrollment = await prisma.trainingEnrollment.update({
@@ -23,3 +22,4 @@ export const rateTraining = async (req: AuthRequest, res: Response) : Promise<vo
         res.status(500).json({ error: 'Failed to submit rating' });
     }
 };
+*/
