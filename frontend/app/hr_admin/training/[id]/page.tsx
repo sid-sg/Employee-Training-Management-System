@@ -82,7 +82,7 @@ export default function TrainingDetailPage() {
                 withCredentials: true
             })
 
-            const trainingData = response.data.training[0]
+            const trainingData = response.data.training
             if (trainingData) {
                 setTraining({
                     title: trainingData.title || "",

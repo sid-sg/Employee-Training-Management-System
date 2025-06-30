@@ -54,7 +54,7 @@ export default function TrainingDetailPage() {
                     withCredentials: true,
                 })
                 
-                const trainingData = res.data.training[0]
+                const trainingData = res.data.training
                 setTraining({
                     title: trainingData.title || "",
                     description: trainingData.description || "",

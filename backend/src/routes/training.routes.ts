@@ -157,7 +157,7 @@ router.delete(
  * @swagger
  * /training/{id}:
  *   get:
- *     summary: Get a specific training (HR_ADMIN and EMPLOYEE)
+ *     summary: Get a specific training (ADMIN, HR_ADMIN and EMPLOYEE)
  *     tags: [Training]
  *     security:
  *       - bearerAuth: []
@@ -181,7 +181,7 @@ router.delete(
 router.get(
     '/:id',
     verifyToken,
-    restrictToRoles('HR_ADMIN', 'EMPLOYEE'),
+    restrictToRoles('ADMIN', 'HR_ADMIN', 'EMPLOYEE'),
     validateParams(trainingIdSchema),
     getTraining
 );

@@ -84,7 +84,7 @@ export default function TrainingFeedbackPage() {
                 const trainingRes = await axios.get(`http://localhost:3000/api/training/${trainingId}`, {
                     withCredentials: true,
                 })
-                const trainingData = trainingRes.data.training[0]
+                const trainingData = trainingRes.data.training
                 setTraining({
                     title: trainingData.title || "",
                     mode: trainingData.mode || ""

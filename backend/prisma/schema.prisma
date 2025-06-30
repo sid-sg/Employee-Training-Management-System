@@ -23,6 +23,7 @@ model User {
   password         String
   role             Role                 @default(EMPLOYEE)
   department       String
+  designation      String?
   createdAt        DateTime             @default(now())
   createdTrainings Training[]           @relation("CreatedTrainings")
   enrollments      TrainingEnrollment[]

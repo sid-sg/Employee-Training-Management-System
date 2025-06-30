@@ -138,20 +138,20 @@ export const getTraining = async (req: AuthRequest & { params: TrainingIdParams 
             }
         }
 
-        const training = await prisma.training.findMany({
+        const training = await prisma.training.findUnique({
             where: {
                 id,
             }
         });
 
-        if (training.length === 0) {
+        if (!training) {
             res.status(404).json({ error: 'Training not found' });
             return;
         }
 
         res.status(200).json({ training });
     } catch (error) {
-        console.error('Error fetching created training:', error);
+        console.error('Error fetching training:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };

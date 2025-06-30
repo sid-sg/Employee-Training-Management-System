@@ -51,7 +51,7 @@ export default function EditTrainingPage() {
                         withCredentials: true
                     });
                     
-                    const training = res.data.training[0];
+                    const training = res.data.training;
 
                     setForm({
                         title: training.title || "",
