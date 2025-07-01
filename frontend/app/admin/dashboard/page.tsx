@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import dynamic from "next/dynamic"
 import axios from "@/utils/axios"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -26,13 +27,15 @@ interface CreateUserForm {
   role: "EMPLOYEE" | "HR_ADMIN"
 }
 
-export default function SuperAdminDashboard() {
+function SuperAdminDashboard() {
+  // Use File | null only after component mounts
   const [employeeFile, setEmployeeFile] = useState<File | null>(null)
   const [hrFile, setHrFile] = useState<File | null>(null)
   const [uploadStatus, setUploadStatus] = useState("")
   const [stats, setStats] = useState({ totalEmployees: 0, totalHRAdmins: 0, totalActiveTrainings: 0 })
   const [isCreatingUser, setIsCreatingUser] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [isMounted, setIsMounted] = useState(false)
   const [createUserForm, setCreateUserForm] = useState<CreateUserForm>({
     name: "",
     employeeid: "",
@@ -46,13 +49,19 @@ export default function SuperAdminDashboard() {
   const router = useRouter()
 
   useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isMounted) return
+
     const checkAuthAndFetchData = async () => {
       try {
         // Check authentication
         const authRes = await axios.get("http://localhost:3000/api/auth/verify", {
           withCredentials: true
         })
-        
+
         if (authRes.data.user.role !== "ADMIN") {
           router.push("/")
           return
@@ -69,7 +78,7 @@ export default function SuperAdminDashboard() {
     }
 
     checkAuthAndFetchData()
-  }, [router])
+  }, [router, isMounted])
 
   const fetchStats = async () => {
     try {
@@ -138,7 +147,7 @@ export default function SuperAdminDashboard() {
     setIsCreatingUser(true)
 
     try {
-      const endpoint = createUserForm.role === "EMPLOYEE" 
+      const endpoint = createUserForm.role === "EMPLOYEE"
         ? "http://localhost:3000/api/admin/upload-employees"
         : "http://localhost:3000/api/admin/upload-hr-admins"
 
@@ -148,7 +157,7 @@ export default function SuperAdminDashboard() {
       })
 
       toast.success(`${createUserForm.role === "EMPLOYEE" ? "Employee" : "HR Admin"} created successfully!`)
-      
+
       // Reset form
       setCreateUserForm({
         name: "",
@@ -180,7 +189,8 @@ export default function SuperAdminDashboard() {
     })
   }
 
-  if (isLoading) {
+  // Don't render until mounted to avoid hydration issues
+  if (!isMounted || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-muted">
         <div className="text-center">
@@ -420,3 +430,8 @@ export default function SuperAdminDashboard() {
     </div>
   )
 }
+
+// Export as dynamic component to prevent SSR
+export default dynamic(() => Promise.resolve(SuperAdminDashboard), {
+  ssr: false
+})

@@ -1,3 +1,5 @@
+
+
 import { z } from 'zod';
 
 export const adminUserCreationSchema = z.object({
@@ -14,9 +16,12 @@ export const adminUserCreationSchema = z.object({
   role: z.enum(['EMPLOYEE', 'HR_ADMIN'])
 });
 
-export const adminFileUploadSchema = z.object({
-  file: z.instanceof(File, { message: 'File is required' })
-});
+export const adminFileUploadSchema =
+  typeof window !== "undefined"
+    ? z.object({
+        file: z.instanceof(File).refine(f => f.type === "text/csv", "Must be a CSV file")
+      })
+    : z.any(); 
 
 export type AdminUserCreation = z.infer<typeof adminUserCreationSchema>;
 export type AdminFileUpload = z.infer<typeof adminFileUploadSchema>; 
