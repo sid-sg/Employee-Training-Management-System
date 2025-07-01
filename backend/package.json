@@ -5,7 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "start": "tsc && node dist/index.js"
+    "start": "tsc && node dist/index.js",
+    "start-emailWorker": "ts-node workers/emailWorker.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

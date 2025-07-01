@@ -3,9 +3,10 @@ import fs from 'fs';
 import csv from 'csv-parser';
 import bcrypt from 'bcrypt';
 import prisma from '../prisma/client';
-import { sendEmail } from '../mailer/mailer';
+import { sendEmail } from '../../workers/mailer';
 import { onboardingTemplate } from '../mailer/templates';
 import { AdminUserCreationRequest } from '../validations/admin.validation';
+import { emailQueue } from '../queues/emailQueue';
 
 function generateRandomPassword(length = 10): string {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#';
@@ -66,7 +67,12 @@ const handleCSVUpload = async (req: Request, res: Response, role: 'EMPLOYEE' | '
 
             for (const user of createdUsers) {
                 try {
-                    await sendEmail(user.email, "Welcome to the Training Portal", onboardingTemplate(user.name, user.email, user.password));
+                    await emailQueue.add("sendOnboardingEmail", {
+                        to: user.email,
+                        subject: "Welcome to the Training Portal",
+                        htmlBody: onboardingTemplate(user.name, user.email, user.password),
+                    });
+
                 } catch (err) {
                     console.error(`Failed to send email to ${user.email}:`, err);
                 }

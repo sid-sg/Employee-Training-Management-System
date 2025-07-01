@@ -1,16 +1,17 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../middlewares/auth.middleware';
-import { sendEmail } from '../mailer/mailer';
+import { sendEmail } from '../../workers/mailer';
 import { trainingEnrollmentTemplate } from '../mailer/templates';
-import { 
-  TrainingRequest, 
-  TrainingUpdateRequest, 
-  UserEnrollmentRequest, 
-  TrainingIdParams, 
-  TrainingIdEnrollmentParams 
+import {
+    TrainingRequest,
+    TrainingUpdateRequest,
+    UserEnrollmentRequest,
+    TrainingIdParams,
+    TrainingIdEnrollmentParams
 } from '../validations/training.validation';
 import { TrainingFeedbackRequest, TrainingIdFeedbackParams } from '../validations/employee.validation';
+import { emailQueue } from '../queues/emailQueue';
 
 const prisma = new PrismaClient();
 
@@ -250,18 +251,27 @@ export const enrollUsersInTraining = async (req: AuthRequest & { body: UserEnrol
 
         await Promise.allSettled(
             users.map((user) =>
-                sendEmail(
-                    user.email,
-                    `${training.title} Enrollment`,
-                    trainingEnrollmentTemplate(
-                        user.name,
-                        training.title,
-                        training.mode,
-                        training.startDate,
-                        training.endDate,
-                        training.location || '',
-                        training.platform || ''
-                    )
+                emailQueue.add(
+                    "trainingEnrollmentEmail",
+                    {
+                        to: user.email,
+                        subject: `${training.title} Enrollment`,
+                        htmlBody: trainingEnrollmentTemplate( 
+                            user.name,
+                            training.title,
+                            training.mode,
+                            training.startDate,
+                            training.endDate,
+                            training.location || '',
+                            training.platform || ''
+                        ),
+                    },
+                    {
+                        jobId: `enrollment-${training.id}-${user.id}`,
+                        attempts: 3,
+                        removeOnComplete: true,
+                        removeOnFail: true,
+                    }
                 )
             )
         );
